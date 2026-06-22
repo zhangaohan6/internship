@@ -65,6 +65,7 @@ def run(
     attack_name: str,
     user_tasks: list[str] | None,
     logdir: Path,
+    injection_tasks: list[str] | None = None,
 ) -> dict:
     from agentdojo.attacks.attack_registry import load_attack
     from agentdojo.benchmark import (
@@ -98,7 +99,8 @@ def run(
     attack = load_attack(attack_name, suite, pipeline)
     attacked = benchmark_suite_with_injections(
         pipeline, suite, attack, logdir=logdir, force_rerun=False,
-        user_tasks=user_tasks, benchmark_version=BENCHMARK_VERSION,
+        user_tasks=user_tasks, injection_tasks=injection_tasks,
+        benchmark_version=BENCHMARK_VERSION,
     )
 
     return metrics.summarize(
@@ -122,13 +124,16 @@ def main() -> None:
                         help="attack key from AgentDojo's registry")
     parser.add_argument("--user-tasks", nargs="*", default=None,
                         help="optional subset of user task ids (smaller = faster smoke run)")
+    parser.add_argument("--injection-tasks", nargs="*", default=None,
+                        help="optional subset of injection task ids (smaller = faster)")
     parser.add_argument("--logdir", type=Path, default=DEFAULT_LOGDIR)
     args = parser.parse_args()
 
     row = run(
         suite_name=args.suite, model=args.model, backend=args.backend,
         defense=args.defense, attack_name=args.attack,
-        user_tasks=args.user_tasks, logdir=args.logdir,
+        user_tasks=args.user_tasks, injection_tasks=args.injection_tasks,
+        logdir=args.logdir,
     )
     # Attach identifying columns so the report table is self-describing.
     row = {
