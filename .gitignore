@@ -1,0 +1,19 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Env / secrets
+.env
+*.key
+
+# Eval artifacts (keep results/ tracked, ignore scratch)
+benchmarks/results/*.tmp
+*.log
+
+# OS
+.DS_Store

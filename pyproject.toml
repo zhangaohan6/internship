@@ -1,0 +1,39 @@
+[project]
+name = "aggreguard"
+version = "0.0.1"
+description = "Trace-level, aggregation-aware safety guardrail middleware and evaluation harness for LLM agents."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Apache-2.0" }
+authors = [{ name = "zhangaohan" }]
+dependencies = [
+    "pandas>=2.0",
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+# Evaluation stack — installed when running the benchmark harness (Phase 0+).
+eval = [
+    "agentdojo",
+]
+# Injection-detection baselines (Component 2). Heavy; install on demand.
+detectors = [
+    "transformers>=4.40",
+    "torch",
+]
+# Observability (Component 6).
+obs = [
+    "langfuse",
+]
+dev = [
+    "pytest>=8.0",
+    "ruff>=0.6",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
