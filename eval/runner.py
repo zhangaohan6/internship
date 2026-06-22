@@ -117,11 +117,19 @@ def main() -> None:
         defense=args.defense, attack_name=args.attack,
         user_tasks=args.user_tasks, logdir=args.logdir,
     )
+    # Attach identifying columns so the report table is self-describing.
+    row = {
+        "suite": args.suite, "backend": args.backend, "model": args.model,
+        "defense": args.defense or "none", "attack": args.attack, **row,
+    }
     print("=== AggreGuard baseline row ===")
-    print(f"suite={args.suite} backend={args.backend} model={args.model} "
-          f"defense={args.defense or 'none'} attack={args.attack}")
     for k, v in row.items():
         print(f"  {k}: {v}")
+
+    from eval.report import write_report
+
+    md_path, html_path = write_report([row], outdir=args.logdir)
+    print(f"\nreport written:\n  {md_path}\n  {html_path}")
 
 
 if __name__ == "__main__":

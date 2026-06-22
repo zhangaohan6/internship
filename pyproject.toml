@@ -9,6 +9,7 @@ authors = [{ name = "zhangaohan" }]
 dependencies = [
     "pandas>=2.0",
     "pydantic>=2.0",
+    "tabulate>=0.9",  # pandas.DataFrame.to_markdown backend for report.py
 ]
 
 [project.optional-dependencies]
