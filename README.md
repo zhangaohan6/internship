@@ -22,9 +22,14 @@ See [AggreGuard_项目计划.md](AggreGuard_项目计划.md) for the full plan.
   baseline (read-only / allowlist) with a pluggable LLM-judge hook.
 - **C4 aggregation** (algorithm scaffold), **C5 action gating**, **C6 decision logging**.
 
-Eval harness (runner + metrics + report) is wired to AgentDojo. Still needed for the
-Phase 1 exit: plug these components into the pipeline as a defense and run a model
-backend to show an ASR drop with a comparison table.
+**Composition + integration:** `aggreguard/guard.py` strings C1/C2/C3/C5/C6 into one
+per-step `AggreGuard.evaluate()` decision (BLOCK > ESCALATE_HITL > ALLOW).
+`aggreguard/integrations/agentdojo_defense.py` exposes it as an AgentDojo defense — the
+runner accepts `--defense aggreguard`, inserting the AggreGuard PI detector into the
+tools-execution loop.
+
+Still needed for the Phase 1 exit: run a model backend to produce the
+no-defense vs AggreGuard comparison table (expected ASR drop).
 
 ## Layout
 

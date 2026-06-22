@@ -36,11 +36,24 @@ def _build_pipeline(model: str, defense: str | None):
 
     config = PipelineConfig(
         llm=model,
-        defense=defense,
+        defense=None if defense == "aggreguard" else defense,
         system_message_name=None,
         system_message=None,
     )
-    return AgentPipeline.from_config(config)
+
+    if defense != "aggreguard":
+        return AgentPipeline.from_config(config)
+
+    # AggreGuard is not one of AgentDojo's built-in defenses; assemble it ourselves.
+    from agentdojo.agent_pipeline.agent_pipeline import get_llm
+    from agentdojo.models import MODEL_PROVIDERS, ModelsEnum
+
+    from aggreguard.integrations.agentdojo_defense import build_aggreguard_pipeline
+
+    llm = get_llm(MODEL_PROVIDERS[ModelsEnum(model)], model, config.model_id, config.tool_delimiter)
+    return build_aggreguard_pipeline(
+        llm, system_message=config.system_message, tool_output_format=config.tool_output_format
+    )
 
 
 def run(
