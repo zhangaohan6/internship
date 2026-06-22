@@ -12,8 +12,19 @@ See [AggreGuard_项目计划.md](AggreGuard_项目计划.md) for the full plan.
 
 ## Status
 
-**Phase 0 — scaffolding.** Repository skeleton in place; component modules are stubs.
-Model backend (local Ollama vs Claude/GPT API) not yet chosen.
+**Phase 1 — MVP middleware.** Components implemented:
+
+- **C1 provenance / trust boundary** — taint-tracking (`Tagged` values, least-trusted
+  propagation) + a trust-violation check (untrusted data must not drive high-risk tools).
+- **C2 injection detection** — pluggable interface; zero-dep keyword baseline +
+  lazy-loaded HuggingFace detector (default ProtectAI deberta-v3 prompt-injection-v2).
+- **C3 task alignment** — Task-Shield-style monitor: structured `UserIntent` + rule
+  baseline (read-only / allowlist) with a pluggable LLM-judge hook.
+- **C4 aggregation** (algorithm scaffold), **C5 action gating**, **C6 decision logging**.
+
+Eval harness (runner + metrics + report) is wired to AgentDojo. Still needed for the
+Phase 1 exit: plug these components into the pipeline as a defense and run a model
+backend to show an ASR drop with a comparison table.
 
 ## Layout
 
