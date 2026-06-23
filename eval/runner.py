@@ -36,6 +36,7 @@ def _build_pipeline(model: str, defense: str | None):
 
     config = PipelineConfig(
         llm=model,
+        model_id=None,
         defense=None if defense == "aggreguard" else defense,
         system_message_name=None,
         system_message=None,
@@ -52,7 +53,8 @@ def _build_pipeline(model: str, defense: str | None):
 
     llm = get_llm(MODEL_PROVIDERS[ModelsEnum(model)], model, config.model_id, config.tool_delimiter)
     return build_aggreguard_pipeline(
-        llm, system_message=config.system_message, tool_output_format=config.tool_output_format
+        llm, llm_name=model, system_message=config.system_message,
+        tool_output_format=config.tool_output_format,
     )
 
 
@@ -72,6 +74,7 @@ def run(
         benchmark_suite_with_injections,
         benchmark_suite_without_injections,
     )
+    from agentdojo.logging import OutputLogger
     from agentdojo.task_suite.load_suites import get_suites
 
     from eval import metrics
@@ -89,19 +92,21 @@ def run(
     pipeline = _build_pipeline(model, defense)
     logdir.mkdir(parents=True, exist_ok=True)
 
-    # 1) Clean utility — no injections.
-    clean = benchmark_suite_without_injections(
-        pipeline, suite, logdir=logdir, force_rerun=False,
-        user_tasks=user_tasks, benchmark_version=BENCHMARK_VERSION,
-    )
+    # AgentDojo's benchmark helpers expect an active Logger on the stack.
+    with OutputLogger(str(logdir)):
+        # 1) Clean utility — no injections.
+        clean = benchmark_suite_without_injections(
+            pipeline, suite, logdir=logdir, force_rerun=False,
+            user_tasks=user_tasks, benchmark_version=BENCHMARK_VERSION,
+        )
 
-    # 2) Under attack — ASR + utility-under-attack.
-    attack = load_attack(attack_name, suite, pipeline)
-    attacked = benchmark_suite_with_injections(
-        pipeline, suite, attack, logdir=logdir, force_rerun=False,
-        user_tasks=user_tasks, injection_tasks=injection_tasks,
-        benchmark_version=BENCHMARK_VERSION,
-    )
+        # 2) Under attack — ASR + utility-under-attack.
+        attack = load_attack(attack_name, suite, pipeline)
+        attacked = benchmark_suite_with_injections(
+            pipeline, suite, attack, logdir=logdir, force_rerun=False,
+            user_tasks=user_tasks, injection_tasks=injection_tasks,
+            benchmark_version=BENCHMARK_VERSION,
+        )
 
     return metrics.summarize(
         clean_utility=metrics.utility(clean["utility_results"]),

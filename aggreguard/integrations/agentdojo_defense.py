@@ -47,6 +47,7 @@ def make_pi_detector(
 def build_aggreguard_pipeline(
     llm,
     *,
+    llm_name: str | None = None,
     system_message: str | None = None,
     detector: InjectionDetector | None = None,
     tool_output_format: str | None = None,
@@ -54,6 +55,9 @@ def build_aggreguard_pipeline(
     """Assemble an AgentPipeline with the AggreGuard PI detector in the tools loop.
 
     ``llm`` is a constructed AgentDojo LLM pipeline element (or any BasePipelineElement).
+    ``llm_name`` is the model string (e.g. "local", "gpt-4o-..."); it must appear in the
+    pipeline name so AgentDojo's model-addressing attacks can resolve the model — mirror
+    AgentDojo's own ``f"{llm_name}-{defense}"`` naming. Falls back to ``llm.name``.
     Mirrors the no-defense pipeline shape, inserting the detector after tool execution.
     """
     import json
@@ -78,6 +82,7 @@ def build_aggreguard_pipeline(
         make_pi_detector(detector),
         llm,
     ])
+    name = llm_name or getattr(llm, "name", None) or "llm"
     pipeline = AgentPipeline([sys_msg, InitQuery(), llm, tools_loop])
-    pipeline.name = f"{getattr(llm, 'name', 'llm')}-aggreguard"
+    pipeline.name = f"{name}-aggreguard"
     return pipeline
