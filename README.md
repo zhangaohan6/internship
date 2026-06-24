@@ -20,16 +20,31 @@ See [AggreGuard_项目计划.md](AggreGuard_项目计划.md) for the full plan.
   lazy-loaded HuggingFace detector (default ProtectAI deberta-v3 prompt-injection-v2).
 - **C3 task alignment** — Task-Shield-style monitor: structured `UserIntent` + rule
   baseline (read-only / allowlist) with a pluggable LLM-judge hook.
-- **C4 aggregation** (algorithm scaffold), **C5 action gating**, **C6 decision logging**.
+- **C4 aggregation ★** — cumulative-disclosure monitor (sensitivity budget + k-anonymity
+  re-identification over a reference population). **C5 action gating**, **C6 logging**.
 
 **Composition + integration:** `aggreguard/guard.py` strings C1/C2/C3/C5/C6 into one
 per-step `AggreGuard.evaluate()` decision (BLOCK > ESCALATE_HITL > ALLOW).
-`aggreguard/integrations/agentdojo_defense.py` exposes it as an AgentDojo defense — the
-runner accepts `--defense aggreguard`, inserting the AggreGuard PI detector into the
-tools-execution loop.
+`aggreguard/integrations/agentdojo_defense.py` exposes it as an AgentDojo defense
+(`--defense aggreguard`).
 
-Still needed for the Phase 1 exit: run a model backend to produce the
-no-defense vs AggreGuard comparison table (expected ASR drop).
+**Phase 2 — aggregation moat (the novelty).** `eval/attacks/aggregation_suite.py` is the
+project's own multi-step inference attack suite; `eval/aggregation_eval.py` contrasts C4
+against an I/O-filter baseline. Result (`benchmarks/results/aggregation/report.md`):
+
+| defense | aggregation-attack detection | benign FPR |
+|---|--:|--:|
+| io_filter (text filter stand-in) | 0.00 | 0.00 |
+| aggreguard_c4 | **1.00** | **0.00** |
+
+I/O filters are structurally blind to attacks where every single step is benign; C4
+catches them (via budget and via re-identification) at zero false positives on benign
+multi-step work. (Small hand-built suite — a mechanism demonstration, not a large-scale
+benchmark.)
+
+**AgentDojo injection results (Phase 1):** baseline ASR is 0 on both backends tried
+(local `llama3.1:8b` too weak; api `claude-sonnet-4-6` self-defends), so an end-to-end
+ASR drop isn't demonstrable there yet — see `benchmarks/PHASE1_FINDINGS.md`.
 
 ## Layout
 
