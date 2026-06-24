@@ -31,11 +31,48 @@ BENCHMARK_VERSION = "v1.2.1"
 DEFAULT_LOGDIR = Path(__file__).resolve().parent.parent / "benchmarks" / "results"
 
 
+def _is_known_model(model: str) -> bool:
+    from agentdojo.models import ModelsEnum
+
+    try:
+        ModelsEnum(model)
+        return True
+    except ValueError:
+        return False
+
+
+def _build_custom_llm(model: str):
+    """Construct an LLM element for a model AgentDojo doesn't know (e.g. newer Claude
+    ids like ``claude-sonnet-4-6`` exposed by this API key), and register a prose name
+    so model-addressing attacks (``important_instructions``) can resolve it.
+    """
+    from agentdojo.models import MODEL_NAMES
+
+    if not model.startswith(("claude", "fable")):
+        raise SystemExit(
+            f"model {model!r} is not a built-in AgentDojo model and no custom builder "
+            "is registered for it (only newer Claude/Fable ids are handled)."
+        )
+    import anthropic
+
+    from agentdojo.agent_pipeline.llms.anthropic_llm import AnthropicLLM
+
+    llm = AnthropicLLM(anthropic.Anthropic(), model)
+    llm.name = model
+    MODEL_NAMES.setdefault(model, "Claude")
+    return llm
+
+
 def _build_pipeline(model: str, defense: str | None):
     from agentdojo.agent_pipeline import AgentPipeline, PipelineConfig
 
+    known = _is_known_model(model)
+    # Known models: pass the string so AgentDojo's from_config builds & names them
+    # exactly as before (preserves the local-provider attack-resolution path).
+    llm_for_config = model if known else _build_custom_llm(model)
+
     config = PipelineConfig(
-        llm=model,
+        llm=llm_for_config,
         model_id=None,
         defense=None if defense == "aggreguard" else defense,
         system_message_name=None,
@@ -45,20 +82,27 @@ def _build_pipeline(model: str, defense: str | None):
     if defense != "aggreguard":
         return AgentPipeline.from_config(config)
 
-    # AggreGuard is not one of AgentDojo's built-in defenses; assemble it ourselves.
-    from agentdojo.agent_pipeline.agent_pipeline import get_llm
-    from agentdojo.models import MODEL_PROVIDERS, ModelsEnum
-
+    # AggreGuard is not a built-in AgentDojo defense; assemble it ourselves. The tools
+    # loop needs the concrete llm element.
     from aggreguard.integrations.agentdojo_defense import build_aggreguard_pipeline
 
-    llm = get_llm(MODEL_PROVIDERS[ModelsEnum(model)], model, config.model_id, config.tool_delimiter)
+    if known:
+        from agentdojo.agent_pipeline.agent_pipeline import get_llm
+        from agentdojo.models import MODEL_PROVIDERS, ModelsEnum
+
+        llm_elem = get_llm(
+            MODEL_PROVIDERS[ModelsEnum(model)], model, None, config.tool_delimiter
+        )
+    else:
+        llm_elem = llm_for_config
+
     return build_aggreguard_pipeline(
-        llm, llm_name=model, system_message=config.system_message,
+        llm_elem, llm_name=model, system_message=config.system_message,
         tool_output_format=config.tool_output_format,
     )
 
 
-def run(
+def run_raw(
     *,
     suite_name: str,
     model: str,
@@ -68,7 +112,12 @@ def run(
     user_tasks: list[str] | None,
     logdir: Path,
     injection_tasks: list[str] | None = None,
-) -> dict:
+) -> tuple[dict, dict]:
+    """Run the benchmark and return the raw AgentDojo (clean, attacked) SuiteResults.
+
+    Exposed separately from ``run`` so callers (e.g. parallel slices) can aggregate the
+    per-task boolean results correctly before computing rates.
+    """
     from agentdojo.attacks.attack_registry import load_attack
     from agentdojo.benchmark import (
         benchmark_suite_with_injections,
@@ -76,8 +125,6 @@ def run(
     )
     from agentdojo.logging import OutputLogger
     from agentdojo.task_suite.load_suites import get_suites
-
-    from eval import metrics
 
     if backend == "local":
         # Point AgentDojo's local provider at Ollama's OpenAI-compatible port.
@@ -94,20 +141,37 @@ def run(
 
     # AgentDojo's benchmark helpers expect an active Logger on the stack.
     with OutputLogger(str(logdir)):
-        # 1) Clean utility — no injections.
         clean = benchmark_suite_without_injections(
             pipeline, suite, logdir=logdir, force_rerun=False,
             user_tasks=user_tasks, benchmark_version=BENCHMARK_VERSION,
         )
-
-        # 2) Under attack — ASR + utility-under-attack.
         attack = load_attack(attack_name, suite, pipeline)
         attacked = benchmark_suite_with_injections(
             pipeline, suite, attack, logdir=logdir, force_rerun=False,
             user_tasks=user_tasks, injection_tasks=injection_tasks,
             benchmark_version=BENCHMARK_VERSION,
         )
+    return clean, attacked
 
+
+def run(
+    *,
+    suite_name: str,
+    model: str,
+    backend: str,
+    defense: str | None,
+    attack_name: str,
+    user_tasks: list[str] | None,
+    logdir: Path,
+    injection_tasks: list[str] | None = None,
+) -> dict:
+    from eval import metrics
+
+    clean, attacked = run_raw(
+        suite_name=suite_name, model=model, backend=backend, defense=defense,
+        attack_name=attack_name, user_tasks=user_tasks, logdir=logdir,
+        injection_tasks=injection_tasks,
+    )
     return metrics.summarize(
         clean_utility=metrics.utility(clean["utility_results"]),
         asr=metrics.attack_success_rate(attacked["security_results"]),
