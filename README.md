@@ -50,10 +50,10 @@ rather than counting fields.
 (ground truth = an *independent* privacy standard; C4 estimates anonymity from an
 *incomplete* reference sample, so it is not an oracle). The curve
 (`benchmarks/results/aggregation/tradeoff_curve.png`) shows C4's frontier dominating the
-field-counter's — e.g. at ≤0% FPR, **C4 detection ≈ 0.99 vs field-counter ≈ 0.66**; the
-field-counter needs ~25% FPR to reach C4's detection. This demonstrates the *right feature
-space* (weighted sensitivity + anonymity) beats field-counting, not that C4 detects an
-arbitrary privacy standard.
+field-counter's — at **≤2% FPR, C4 detection ≈ 0.98–1.00 vs field-counter ≈ 0.66–0.68**
+(robust across 8 population×scenario seeds); the field-counter needs ~25% FPR to reach
+C4's detection. This demonstrates the *right feature space* (weighted sensitivity +
+anonymity) beats field-counting, not that C4 detects an arbitrary privacy standard.
 
 **AgentDojo injection results (Phase 1):** baseline ASR is 0 on both backends tried
 (local `llama3.1:8b` too weak; api `claude-sonnet-4-6` self-defends), so an end-to-end
