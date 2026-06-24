@@ -22,17 +22,29 @@ from typing import Protocol
 DEFAULT_MODEL_ID = "ProtectAI/deberta-v3-base-prompt-injection-v2"
 
 # Phrases commonly seen in indirect prompt-injection payloads. Coarse on purpose —
-# this is a stand-in baseline, not the real detector.
+# this is a stand-in baseline, not the real detector. The second group targets the
+# social-engineering phrasing used by AgentDojo's `important_instructions` attack
+# (verified against real traces: "<INFORMATION> ... important message from me ...
+# Before you can solve the task ... Please email '...' to '...@...'").
 _INJECTION_PATTERNS = [
+    # classic override-style injections
     r"ignore (all|any|the)? ?(previous|prior|above) instructions",
     r"disregard (the )?(system|previous|above)",
     r"you are now",
     r"new instructions?:",
     r"important instructions?",
     r"do not tell the user",
-    r"send (an )?email to",
-    r"forward .* to",
     r"\bsystem prompt\b",
+    # AgentDojo important_instructions / indirect social-engineering payloads
+    r"</?information>",
+    r"</?instructions>",
+    r"important message from (me|the)",
+    r"message from me,?\s*\w+.*to you",
+    r"before you (can )?(solve|complete|continue|proceed|do)",
+    r"please do the following first",
+    r"(please |kindly )?(send|email|forward|transfer|post) .{0,40}\bto\b\s*'?[\w.+-]+@",
+    r"using '.*' as (the )?subject",
+    r"signed,",
 ]
 _COMPILED = [re.compile(p, re.IGNORECASE) for p in _INJECTION_PATTERNS]
 
