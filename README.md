@@ -23,8 +23,10 @@ See [AggreGuard_项目计划.md](AggreGuard_项目计划.md) for the full plan.
 - **C4 aggregation ★** — cumulative-disclosure monitor (sensitivity budget + k-anonymity
   re-identification over a reference population). **C5 action gating**, **C6 logging**.
 
-**Composition + integration:** `aggreguard/guard.py` strings C1/C2/C3/C5/C6 into one
-per-step `AggreGuard.evaluate()` decision (BLOCK > ESCALATE_HITL > ALLOW).
+**Composition + integration:** `aggreguard/guard.py` strings all six components into one
+`AggreGuard.evaluate()` decision (BLOCK > ESCALATE_HITL > ALLOW). C1/C2/C3/C5 are stateless
+per-step checks; **C4 is stateful** — the guard holds one `AggregationMonitor` across the
+session and each `GuardStep` carries the `Disclosure`s the tool call makes.
 `aggreguard/integrations/agentdojo_defense.py` exposes it as an AgentDojo defense
 (`--defense aggreguard`).
 

@@ -6,12 +6,15 @@ any untrusted text it would consume). Severity ordering: BLOCK > ESCALATE_HITL >
 
 Pipeline per step:
   C2 injection detection on untrusted inputs ─┐
-  C1 trust-boundary violation                 ├─► combine (most severe wins) ─► C6 log
-  C3 task-alignment check                      │
-  C5 high-risk action gating                  ─┘
+  C1 trust-boundary violation                 │
+  C3 task-alignment check                     ├─► combine (most severe wins) ─► C6 log
+  C5 high-risk action gating                  │
+  C4 aggregation/inference monitor            ─┘
 
-This object is the seam that ``integrations/`` adapt onto a concrete agent framework
-(AgentDojo defense, LangGraph node, Claude SDK hook). It holds no framework imports.
+Unlike C1/C2/C3/C5 (stateless per-step checks), C4 is *stateful*: the AggreGuard instance
+holds one AggregationMonitor across a session, and each step feeds it the disclosures the
+tool call would make (entity, attribute, value, sink). This is the seam that
+``integrations/`` adapt onto a concrete agent framework. It holds no framework imports.
 """
 
 from __future__ import annotations
@@ -21,6 +24,7 @@ from enum import IntEnum
 
 from aggreguard.config import GuardConfig
 from aggreguard.middleware.action_gate import GateDecision, gate
+from aggreguard.middleware.aggregation import AggregationMonitor
 from aggreguard.middleware.injection_detect import InjectionDetector, KeywordInjectionDetector
 from aggreguard.middleware.logging import DecisionLog, DecisionLogger
 from aggreguard.middleware.provenance import Tagged, trust_violation
@@ -64,6 +68,16 @@ class GuardResult:
 
 
 @dataclass
+class Disclosure:
+    """One piece of data a tool call would reveal about a subject (for C4)."""
+
+    entity: str
+    attr: str
+    value: object
+    sink_type: str = "untrusted"  # "untrusted" (leaves trust boundary) | "internal"
+
+
+@dataclass
 class GuardStep:
     """One step to adjudicate."""
 
@@ -71,6 +85,7 @@ class GuardStep:
     args: dict = field(default_factory=dict)
     arg_provenance: list[Tagged] = field(default_factory=list)
     untrusted_texts: list[str] = field(default_factory=list)
+    disclosures: list[Disclosure] = field(default_factory=list)
     session_id: str | None = None
     now: float = 0.0  # epoch seconds injected by the caller
 
@@ -84,12 +99,15 @@ class AggreGuard:
         config: GuardConfig | None = None,
         injection_detector: InjectionDetector | None = None,
         logger: DecisionLogger | None = None,
+        population: list[dict] | None = None,
     ):
         self.config = config or GuardConfig()
         self.intent = intent
         self.injection_detector = injection_detector or KeywordInjectionDetector()
         self.logger = logger or DecisionLogger()
         self._aligner = TaskAlignmentMonitor(intent) if intent is not None else None
+        # C4 is stateful across the session — one monitor per AggreGuard instance.
+        self.aggregation = AggregationMonitor(self.config.aggregation, population=population)
 
     def evaluate(self, step: GuardStep) -> GuardResult:
         findings: list[Finding] = []
@@ -124,6 +142,18 @@ class AggreGuard:
             findings.append(Finding("action_gate",
                                     _GATE_TO_GUARD[gate_decision],
                                     f"high-risk tool {step.tool!r} (mode={self.config.action_gate_mode})"))
+
+        # C4 — aggregation/inference monitor (stateful). Feed each disclosure this step
+        # would make; escalate if cumulative disclosure crosses budget or re-identifies.
+        for d in step.disclosures:
+            agg = self.aggregation.on_disclosure(
+                session_id=step.session_id or "default", entity=d.entity, attr=d.attr,
+                value=d.value, sink_type=d.sink_type, now=step.now,
+            )
+            if agg.escalated:
+                findings.append(Finding("aggregation", GuardDecision.ESCALATE_HITL,
+                                        f"subject {d.entity!r}: {'; '.join(agg.reasons)}"))
+                break
 
         decision = max((f.decision for f in findings), default=GuardDecision.ALLOW)
 
