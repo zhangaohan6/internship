@@ -26,6 +26,10 @@ detectors = [
 obs = [
     "langfuse",
 ]
+# Plotting for the detection-FPR tradeoff sweep (eval/sweep.py).
+viz = [
+    "matplotlib>=3.8",
+]
 dev = [
     "pytest>=8.0",
     "ruff>=0.6",

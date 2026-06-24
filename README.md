@@ -43,8 +43,17 @@ a stateless injection filter is the wrong tool; a *fair* session-aware PII field
 *matches* C4 on detection but over-flags legitimate multi-attribute disclosures. C4's
 genuine advantage is **lower false positives at equal detection** — it distinguishes a
 re-identifying quasi-identifier combination (anon < k) from a harmless one (anon ≥ k)
-rather than counting fields. (Small hand-built suite — a mechanism demonstration, not a
-large-scale benchmark.)
+rather than counting fields.
+
+**Detection–FPR tradeoff sweep (plan §9).** `eval/sweep.py` runs the monitor across a
+(tau, k) grid against a 371-member population and 354 ground-truth-labelled scenarios
+(ground truth = an *independent* privacy standard; C4 estimates anonymity from an
+*incomplete* reference sample, so it is not an oracle). The curve
+(`benchmarks/results/aggregation/tradeoff_curve.png`) shows C4's frontier dominating the
+field-counter's — e.g. at ≤0% FPR, **C4 detection ≈ 0.99 vs field-counter ≈ 0.66**; the
+field-counter needs ~25% FPR to reach C4's detection. This demonstrates the *right feature
+space* (weighted sensitivity + anonymity) beats field-counting, not that C4 detects an
+arbitrary privacy standard.
 
 **AgentDojo injection results (Phase 1):** baseline ASR is 0 on both backends tried
 (local `llama3.1:8b` too weak; api `claude-sonnet-4-6` self-defends), so an end-to-end
