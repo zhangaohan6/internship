@@ -1,16 +1,18 @@
-"""Evaluate the aggregation-inference suite: C4 vs an I/O-filter baseline.
+"""Evaluate the aggregation-inference suite: C4 vs fair baselines.
 
-For every scenario we ask two defenses whether they would flag it:
-  - **io_filter**: the keyword injection detector (Component 2) applied to each step's
-    outgoing text. Stands in for I/O text filters (Lakera / LLM Guard) — it sees one
-    benign message at a time and has no session memory.
-  - **aggreguard_c4**: the aggregation monitor (Component 4), which scores cumulative
-    disclosure per (session, subject) and escalates on budget or re-identification.
+Three defenses per scenario (see eval/baselines.py):
+  - **injection_filter**: keyword prompt-injection detector per message (wrong tool — it
+    has no PII capability; expected to detect nothing).
+  - **session_pii_filter**: a fair, non-novel stateful baseline that counts distinct
+    sensitive fields per subject on egress and escalates at >= 2.
+  - **aggreguard_c4**: the aggregation monitor (sensitivity budget + k-anonymity).
 
-Headline: aggregation attacks are invisible to the I/O filter but caught by C4, while
-C4's false-positive rate on benign multi-step work stays low.
+Honest headline (red-team driven): the injection filter is the wrong category; the fair
+PII field-counter matches C4 on DETECTION but over-flags legitimate multi-attribute
+disclosures, so C4's advantage is LOWER FALSE POSITIVES at equal detection — because it
+reasons about re-identifiability (anon < k) instead of counting fields.
 
-Zero API cost — the attack lives entirely in the disclosure trace.
+Uses the SHIPPED config (aggreguard.config.DEFAULT_CONFIG). Zero API cost.
 """
 
 from __future__ import annotations
@@ -22,21 +24,19 @@ from pathlib import Path
 from aggreguard.middleware.aggregation import AggregationMonitor
 from aggreguard.middleware.injection_detect import KeywordInjectionDetector
 from eval.attacks.aggregation_suite import POPULATION, SUITE_CONFIG, Scenario, load_scenarios
+from eval.baselines import SessionPIIFilter, injection_filter_flags
 
 DEFAULT_OUT = Path(__file__).resolve().parent.parent / "benchmarks" / "results" / "aggregation"
+
+DEFENSES = ["injection_filter", "session_pii_filter", "aggreguard_c4"]
 
 
 @dataclass
 class ScenarioResult:
     name: str
     kind: str
-    io_flagged: bool
-    c4_flagged: bool
+    flags: dict[str, bool]          # defense -> flagged?
     c4_reason: str
-
-
-def _io_flags(scenario: Scenario, detector: KeywordInjectionDetector) -> bool:
-    return any(detector.detect(ev.message) >= detector.threshold for ev in scenario.events)
 
 
 def _c4_flags(scenario: Scenario, monitor: AggregationMonitor) -> tuple[bool, str]:
@@ -53,53 +53,65 @@ def _c4_flags(scenario: Scenario, monitor: AggregationMonitor) -> tuple[bool, st
 
 def evaluate() -> tuple[list[ScenarioResult], dict]:
     scenarios = load_scenarios()
-    detector = KeywordInjectionDetector()
+    injection_detector = KeywordInjectionDetector()
+    pii_filter = SessionPIIFilter(SUITE_CONFIG)
     monitor = AggregationMonitor(SUITE_CONFIG, population=POPULATION)
 
     results = []
     for sc in scenarios:
-        io = _io_flags(sc, detector)
         c4, reason = _c4_flags(sc, monitor)
-        results.append(ScenarioResult(sc.name, sc.kind, io, c4, reason))
+        results.append(ScenarioResult(
+            name=sc.name, kind=sc.kind,
+            flags={
+                "injection_filter": injection_filter_flags(sc.events, injection_detector),
+                "session_pii_filter": pii_filter.flags(sc.events),
+                "aggreguard_c4": c4,
+            },
+            c4_reason=reason,
+        ))
 
-    def rate(kind: str, attr: str) -> float | None:
+    def rate(kind: str, defense: str) -> float | None:
         rows = [r for r in results if r.kind == kind]
         if not rows:
             return None
-        return round(sum(getattr(r, attr) for r in rows) / len(rows), 4)
+        return round(sum(r.flags[defense] for r in rows) / len(rows), 4)
 
     summary = {
-        "io_filter": {
-            "attack_detection_rate": rate("attack", "io_flagged"),
-            "benign_fpr": rate("benign", "io_flagged"),
-        },
-        "aggreguard_c4": {
-            "attack_detection_rate": rate("attack", "c4_flagged"),
-            "benign_fpr": rate("benign", "c4_flagged"),
-        },
+        d: {"attack_detection_rate": rate("attack", d), "benign_fpr": rate("benign", d)}
+        for d in DEFENSES
     }
     return results, summary
 
 
 def to_markdown(results: list[ScenarioResult], summary: dict) -> str:
-    lines = ["# Aggregation-inference suite — C4 vs I/O filter", ""]
+    lines = ["# Aggregation-inference suite — C4 vs fair baselines", ""]
+    lines.append("Config: shipped `DEFAULT_CONFIG` (tau=1.0, k=2, decay off). "
+                 f"Population: {len(POPULATION)} synthetic members.")
+    lines.append("")
     lines.append("## Summary")
     lines.append("")
     lines.append("| defense | attack detection rate ↑ | benign FPR ↓ |")
     lines.append("|---|--:|--:|")
-    for d in ("io_filter", "aggreguard_c4"):
+    for d in DEFENSES:
         s = summary[d]
         lines.append(f"| {d} | {s['attack_detection_rate']} | {s['benign_fpr']} |")
     lines.append("")
     lines.append("## Per-scenario")
     lines.append("")
-    lines.append("| scenario | kind | io_filter flags | C4 flags | C4 reason |")
-    lines.append("|---|---|:--:|:--:|---|")
+    lines.append("| scenario | kind | injection_filter | session_pii_filter | C4 | C4 reason |")
+    lines.append("|---|---|:--:|:--:|:--:|---|")
     for r in results:
+        def mark(d):
+            return "✓" if r.flags[d] else "·"
         lines.append(
-            f"| {r.name} | {r.kind} | {'✓' if r.io_flagged else '·'} | "
-            f"{'✓' if r.c4_flagged else '·'} | {r.c4_reason} |"
+            f"| {r.name} | {r.kind} | {mark('injection_filter')} | "
+            f"{mark('session_pii_filter')} | {mark('aggreguard_c4')} | {r.c4_reason} |"
         )
+    lines.append("")
+    lines.append("**Reading it:** the injection filter is the wrong tool (detects nothing). "
+                 "The fair session-PII filter matches C4 on detection but false-positives on "
+                 "legitimate multi-quasi-identifier disclosures that do not re-identify. C4 "
+                 "matches detection at lower FPR by reasoning about re-identifiability (anon < k).")
     lines.append("")
     return "\n".join(lines) + "\n"
 

@@ -8,10 +8,15 @@ block to keep the false-positive rate low (plan §4 / §9).
 
 Only disclosures flowing to an *untrusted* sink and linkable to an entity are scored;
 internal reasoning reads are ignored, so normal multi-step processing of one subject
-does not accumulate. Time decay prevents stale history from dominating.
+does not accumulate.
 
-This is what I/O text filters (Lakera, LLM Guard) and single-step injection detectors
-structurally cannot see: each step here is individually benign.
+What this adds over existing guardrails: a *stateless* single-step text filter cannot see
+a multi-step disclosure where each step is individually benign. A *stateful* PII filter
+that merely counts distinct sensitive fields per subject can detect the leak — but it
+false-positives on legitimate multi-attribute disclosures. C4's contribution is
+*principled cumulative scoring*: a weighted sensitivity budget plus k-anonymity against a
+reference population, so it distinguishes a re-identifying quasi-identifier combination
+(anon < k) from a non-re-identifying one (anon >= k) rather than just counting fields.
 """
 
 from __future__ import annotations
@@ -84,6 +89,7 @@ class AggregationMonitor:
         if sink_type != UNTRUSTED_SINK:  # only count outflow past the trust boundary
             return DisclosureDecision(ALLOW, 0.0, None, ["sink not untrusted; not scored"])
 
+        attr = self._canonical(attr)
         ledger = self._disclosed.setdefault(session_id, {}).setdefault(entity, SubjectLedger())
         ledger.records.append(
             DisclosureRecord(attr=attr, value=value, weight=self._weight(attr),
@@ -98,7 +104,10 @@ class AggregationMonitor:
         if s >= self.config.tau:
             decision = ESCALATE_HITL
             reasons.append(f"sensitivity budget S={s:.2f} >= tau={self.config.tau}")
-        if anon is not None and anon < self.config.k:
+        # anon == 0 means the disclosed QIDs match NOBODY in the reference population, i.e.
+        # the subject is not a population member — the LEAST re-identifiable case, not the
+        # most. Only escalate when the subject is narrowed to a small but non-empty set.
+        if anon is not None and 0 < anon < self.config.k:
             decision = ESCALATE_HITL
             reasons.append(f"anonymity set {anon} < k={self.config.k} (re-identifiable)")
         if not reasons:
@@ -113,29 +122,42 @@ class AggregationMonitor:
         else:
             self._disclosed.pop(session_id, None)
 
+    def _canonical(self, attr: str) -> str:
+        """Map attribute synonyms to a canonical name (heuristic, not semantic)."""
+        a = attr.strip().lower()
+        return self.config.attr_aliases.get(a, a)
+
     def _weight(self, attr: str) -> float:
         return self.config.weights.get(attr, 0.1)
 
     def _decay(self, dt: float) -> float:
-        if dt <= 0:
+        if not self.config.decay_enabled or dt <= 0:
             return 1.0
         return 0.5 ** (dt / self.config.half_life_seconds)
 
     def _cumulative_sensitivity(self, ledger: SubjectLedger, now: float) -> float:
-        return sum(r.weight * self._decay(now - r.timestamp) for r in ledger.records)
+        # Dedup by (attr, value): a fact revealed twice is one disclosure, not two. Keep
+        # the latest timestamp per fact (least decayed when decay is enabled).
+        latest: dict[tuple[str, str], DisclosureRecord] = {}
+        for r in ledger.records:
+            key = (r.attr, str(r.value))
+            if key not in latest or r.timestamp > latest[key].timestamp:
+                latest[key] = r
+        return sum(r.weight * self._decay(now - r.timestamp) for r in latest.values())
 
     def _estimate_anonymity_set(self, ledger: SubjectLedger) -> int | None:
         """Number of reference-population members consistent with the disclosed QIDs.
 
         Returns None when no population is configured (k-anon branch disabled). Only
-        quasi-identifiers that exist as population columns are used; the latest value
-        wins if an attribute is disclosed more than once.
+        quasi-identifiers that exist as population columns are used; the latest non-null
+        value wins if an attribute is disclosed more than once. A QID disclosed as None is
+        skipped (a missing value reveals nothing).
         """
         if not self.population:
             return None
         qid_values: dict[str, object] = {}
         for r in ledger.records:
-            if r.attr in self.config.quasi_identifiers and r.attr in self._pop_cols:
+            if r.attr in self.config.quasi_identifiers and r.attr in self._pop_cols and r.value is not None:
                 qid_values[r.attr] = r.value
         if not qid_values:
             return len(self.population)

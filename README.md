@@ -30,17 +30,21 @@ per-step `AggreGuard.evaluate()` decision (BLOCK > ESCALATE_HITL > ALLOW).
 
 **Phase 2 — aggregation moat (the novelty).** `eval/attacks/aggregation_suite.py` is the
 project's own multi-step inference attack suite; `eval/aggregation_eval.py` contrasts C4
-against an I/O-filter baseline. Result (`benchmarks/results/aggregation/report.md`):
+against two baselines under the **shipped** config (`benchmarks/results/aggregation/report.md`):
 
-| defense | aggregation-attack detection | benign FPR |
+| defense | aggregation-attack detection ↑ | benign FPR ↓ |
 |---|--:|--:|
-| io_filter (text filter stand-in) | 0.00 | 0.00 |
-| aggreguard_c4 | **1.00** | **0.00** |
+| injection_filter (prompt-injection detector — wrong tool) | 0.00 | 0.00 |
+| session_pii_filter (fair stateful field-counter) | **1.00** | 0.40 |
+| **aggreguard_c4** | **1.00** | **0.00** |
 
-I/O filters are structurally blind to attacks where every single step is benign; C4
-catches them (via budget and via re-identification) at zero false positives on benign
-multi-step work. (Small hand-built suite — a mechanism demonstration, not a large-scale
-benchmark.)
+The honest result (after an adversarial red-team, see `benchmarks/AGGREGATION_REDTEAM.md`):
+a stateless injection filter is the wrong tool; a *fair* session-aware PII field-counter
+*matches* C4 on detection but over-flags legitimate multi-attribute disclosures. C4's
+genuine advantage is **lower false positives at equal detection** — it distinguishes a
+re-identifying quasi-identifier combination (anon < k) from a harmless one (anon ≥ k)
+rather than counting fields. (Small hand-built suite — a mechanism demonstration, not a
+large-scale benchmark.)
 
 **AgentDojo injection results (Phase 1):** baseline ASR is 0 on both backends tried
 (local `llama3.1:8b` too weak; api `claude-sonnet-4-6` self-defends), so an end-to-end
