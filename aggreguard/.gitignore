@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+
+# Env / secrets
+.env
+*.key
+
+# Eval artifacts: keep the reports (report.md/html), ignore raw AgentDojo traces
+benchmarks/results/*/
+benchmarks/results/*.tmp
+*.log
+
+# OS
+.DS_Store
+.venv-llmguard/
