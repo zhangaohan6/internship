@@ -16,3 +16,9 @@ Each project lives in its own folder.
   rehab access 0.78) + SHAP, RAG over ACSQHC care standards, a native tool-use agent, a
   Streamlit UI, and a Type A/B/C evaluation harness (100% tool-selection, 0.97 composite).
   *Code only — the dataset is under a Data Use Agreement and is not redistributed.*
+
+- **[ecom-product-selector/](ecom-product-selector/)** — a data-driven **cross-border
+  e-commerce** sourcing tool: FBA landed-profit waterfall (margin / ROI / breakeven-ACoS), a
+  0–100 product-selection **Opportunity Score**, and a **PPC keyword** analyzer (ACoS / ROAS /
+  max-profitable CPC / recommended bid). Zero-dependency core, two CLIs, a Streamlit dashboard,
+  and 8 unit tests. Synthetic demo data — clone & run.

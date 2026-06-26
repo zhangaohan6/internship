@@ -1,0 +1,6 @@
+# Analysis core: ZERO runtime dependencies (Python 3.9+ stdlib only).
+# Dashboard (optional):
+streamlit>=1.30
+pandas>=2.0
+# Dev:
+pytest>=7.0
