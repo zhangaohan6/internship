@@ -8,7 +8,23 @@ agent's **execution trace** (which tools were called, where data flowed) and uni
 handles **aggregation / inference attacks**: a stream of individually-benign queries that
 together cross a sensitivity threshold.
 
-See [AggreGuard_项目计划.md](AggreGuard_项目计划.md) for the full plan.
+See [AggreGuard_项目计划.md](AggreGuard_项目计划.md) for the full plan, and
+[RESUME.md](RESUME.md) for a one-page summary.
+
+## Results at a glance
+
+- **Aggregation moat:** against a *fair* stateful PII field-counter that matches it on raw
+  detection, the aggregation monitor attains **0.989 vs 0.663 detection at a 2%
+  false-positive budget** (stable across 8 seeds) — it reasons about re-identifiability
+  (anon < k), not field counts. On the core suite: **100% detection at 0% FPR vs the
+  field-counter's 40% FPR**.
+- **Component ablation:** C4 (the aggregation monitor) alone reproduces the full guard
+  (detection 1.00 / FPR 0.00); dropping it collapses detection to 0 — and composing the
+  other components adds no false positives.
+- **Engineering:** 6 composable middleware components, an AgentDojo defense adapter, a
+  reproducible zero-cost eval harness, **49 passing tests**, Apache-2.0.
+- **Honest scope:** single-step injection on AgentDojo is a reported *null result* (baseline
+  ASR already 0 on both backends) — the contribution is the orthogonal aggregation monitor.
 
 ## Status
 
