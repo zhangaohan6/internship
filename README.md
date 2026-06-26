@@ -57,6 +57,14 @@ field-counter's — at **≤2% FPR, C4 detection ≈ 0.98–1.00 vs field-counte
 C4's detection. This demonstrates the *right feature space* (weighted sensitivity +
 anonymity) beats field-counting, not that C4 detects an arbitrary privacy standard.
 
+**Component ablation (Phase 3).** `eval/ablation.py` runs the full composed guard over the
+aggregation suite with component subsets toggled (`AggreGuard(enabled=...)`), writing
+`benchmarks/results/aggregation/ablation.md`. Result: enabling **only C4** reproduces the
+full guard (detection 1.00, FPR 0.00); every subset without C4 — including each other
+component alone — detects nothing, and dropping C4 collapses detection to zero. C4 is the
+sole load-bearing component for this threat, and composing the others around it adds no
+false positives (composition is safe).
+
 **AgentDojo injection results (Phase 1):** baseline ASR is 0 on both backends tried
 (local `llama3.1:8b` too weak; api `claude-sonnet-4-6` self-defends), so an end-to-end
 ASR drop isn't demonstrable there yet — see `benchmarks/PHASE1_FINDINGS.md`.

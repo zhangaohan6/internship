@@ -100,6 +100,7 @@ class AggreGuard:
         injection_detector: InjectionDetector | None = None,
         logger: DecisionLogger | None = None,
         population: list[dict] | None = None,
+        enabled: set[str] | None = None,
     ):
         self.config = config or GuardConfig()
         self.intent = intent
@@ -108,6 +109,9 @@ class AggreGuard:
         self._aligner = TaskAlignmentMonitor(intent) if intent is not None else None
         # C4 is stateful across the session — one monitor per AggreGuard instance.
         self.aggregation = AggregationMonitor(self.config.aggregation, population=population)
+        # Component ablation switch: which findings count toward the decision. None = all.
+        # Names: "injection_detect", "provenance", "task_alignment", "action_gate", "aggregation".
+        self.enabled = enabled
 
     def evaluate(self, step: GuardStep) -> GuardResult:
         findings: list[Finding] = []
@@ -154,6 +158,10 @@ class AggreGuard:
                 findings.append(Finding("aggregation", GuardDecision.ESCALATE_HITL,
                                         f"subject {d.entity!r}: {'; '.join(agg.reasons)}"))
                 break
+
+        # Component ablation: keep only findings from enabled components.
+        if self.enabled is not None:
+            findings = [f for f in findings if f.component in self.enabled]
 
         decision = max((f.decision for f in findings), default=GuardDecision.ALLOW)
 

@@ -260,6 +260,22 @@ This null result is what the paper's actual claim predicts. The contribution of 
 
 Beyond confirming that the harness executes end to end on a real API model, the experiment adds an offline detection check computed at zero additional API cost by replaying the cached tool outputs through the injection detector. This measures a different quantity from the end-to-end ASR that the strong model already drives to zero: whether the guardrail would flag the injected content, not whether the attack succeeded. The shipped keyword detector initially fired on 0 of 35 traces because its patterns did not match AgentDojo's actual payload phrasing. After correcting the patterns to match that phrasing, the detector flagged all 24 injected tool outputs—a figure partly overfit, since the patterns were tuned on this attack's phrasing and should not be read as a general detection rate—while flagging none of the 11 benign tool outputs, on both the `none` and `aggreguard` arms. The 0% false-positive rate on benign outputs, untuned against the benign set, is the more trustworthy of the two numbers.
 
+### 4.5 Component ablation
+
+To attribute the composed guard's behavior to its parts, we ran the full
+`AggreGuard.evaluate()` decision over the aggregation suite with subsets of components
+enabled. The result is unambiguous: enabling only the aggregation monitor (C4) reproduces
+the full guard exactly—detection 1.00, benign false-positive rate 0.00—while every subset
+that excludes C4, including each of the other components alone (provenance, the injection
+detector, task alignment, action gating), detects none of the aggregation attacks. Dropping
+C4 from the full guard collapses detection to zero. This is the expected and honest reading:
+the other components target threats this suite does not exercise—high-risk-tool misuse,
+single-message injection, intent deviation—and are silent here by construction, so the
+end-to-end aggregation detection is attributable entirely to C4. The ablation's second value
+is a composition-safety check: adding the other components alongside C4 introduces no false
+positives on the benign scenarios, so composing the standard defenses around the novel
+monitor does not degrade its operating point.
+
 ## 5. Conclusion
 
 We presented AggreGuard, a trace-level guardrail middleware whose distinctive component is an aggregation-aware monitor that maintains a per-subject disclosure ledger and escalates on either a cumulative sensitivity budget or a k-anonymity re-identification check against a reference population. The central empirical result is a moat over the obvious "just add session memory" defense: against a fair, stateful PII field-counter that matches the monitor on raw detection, the monitor attains a markedly better detection–false-positive trade-off—0.989 versus 0.663 detection at a 2% false-positive budget on the primary run, with the gap stable across eight population-by-scenario seeds (monitor 0.98–1.00 versus field-counter 0.66–0.68 detection)—because it reasons about re-identifiability rather than counting fields. This advantage holds even though ground-truth harm is set by an independent privacy standard and the monitor estimates anonymity from an incomplete reference sample, so the monitor is not an oracle on either axis.
