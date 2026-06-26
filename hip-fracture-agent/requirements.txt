@@ -1,0 +1,20 @@
+# Requires Python 3.11 (saved model pickles were created under 3.11).
+xgboost>=2.0
+scikit-learn>=1.4
+pandas>=2.0
+numpy>=1.26
+shap>=0.45
+pyarrow>=15.0          # required to unpickle the saved model artifacts
+
+langchain>=0.3
+langchain-community>=0.3
+langchain-anthropic>=0.3
+langchain-openai>=0.2
+
+chromadb>=0.5
+sentence-transformers>=3.0
+
+streamlit>=1.38
+
+anthropic>=0.40
+openai>=1.50

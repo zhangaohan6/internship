@@ -1,0 +1,37 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# DATA GOVERNANCE — the ANZHFR datathon data is under a Data Use Agreement and
+# MUST NOT be redistributed. Nothing patient-level (raw or derived) is committed.
+# ─────────────────────────────────────────────────────────────────────────────
+
+# Raw / derived patient data (CSV, spreadsheets, etc.)
+*.csv
+*.parquet
+*.xlsx
+*.xls
+
+# Trained model artifacts EMBED sample patient rows (X_test_sample / y_test_sample
+# in train_model.py) — they leak real records, so never publish them.
+*.pkl
+models/
+
+# Vector store — regenerable from the (public) ACSQHC guidelines via rag_pipeline.py
+chroma_db/
+
+# Eval outputs — regenerable; may quote dataset-derived figures
+eval_results.json
+
+# Secrets and environments
+.env
+.venv/
+.venv-ml/
+venv/
+venv311/
+.streamlit/secrets.toml
+
+# Python / tooling
+__pycache__/
+*.pyc
+.pytest_cache/
+.ruff_cache/
+.idea/
+.DS_Store
