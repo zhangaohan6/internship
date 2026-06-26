@@ -17,7 +17,11 @@ See [AggreGuard_项目计划.md](AggreGuard_项目计划.md) for the full plan, 
   detection, the aggregation monitor attains **0.989 vs 0.663 detection at a 2%
   false-positive budget** (stable across 8 seeds) — it reasons about re-identifiability
   (anon < k), not field counts. On the core suite: **100% detection at 0% FPR vs the
-  field-counter's 40% FPR**.
+  field-counter's 40% FPR**. Verified against the **real LLM Guard (Protect AI) package**
+  (`eval/llmguard_compare.py`): its prompt-injection scanner detects **0%** (wrong tool) and
+  its Sensitive/Presidio PII scanner only **0.50 detection at 0.20 FPR** — it catches overt
+  PII but misses quasi-identifier re-identification and has no session state — vs C4's
+  **1.00 / 0.00**.
 - **Component ablation:** C4 (the aggregation monitor) alone reproduces the full guard
   (detection 1.00 / FPR 0.00); dropping it collapses detection to 0 — and composing the
   other components adds no false positives.

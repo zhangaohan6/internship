@@ -235,6 +235,17 @@ The interpretation is specific and we state it precisely: the result demonstrate
 estimate—dominates field-counting for this trade-off, not that the monitor detects privacy
 harm defined by some arbitrary external standard.
 
+To confirm the field-counter is not a straw man for off-the-shelf tools, we also ran the
+real LLM Guard (Protect AI) package over the same suite. Its prompt-injection scanner
+detected none of the aggregation attacks, as expected of an injection detector, and its
+Sensitive scanner—a production PII detector backed by Microsoft Presidio—detected only 0.50
+of the attacks at a 0.20 false-positive rate. The Sensitive scanner flags messages that
+contain overt PII (a medical condition, a salary) but, scanning each message in isolation
+with no session state, it both misses the quasi-identifier re-identification attacks, whose
+individual fields are not themselves sensitive, and over-flags benign messages that merely
+mention PII. This is the same structural limitation the field-counter exhibits, now
+established with the deployed package rather than a stand-in.
+
 ### 4.3 Limitations
 
 Several limitations bound these claims. The attack suite is small and synthetic; it

@@ -19,6 +19,11 @@ inference attacks that per-message I/O filters (Lakera, LLM Guard) structurally 
   **2% false-positive budget** (stable across 8 population×scenario seeds), proving the
   right feature space — re-identifiability, not field-counting — drives the gain.
 
+- Benchmarked against the **real LLM Guard (Protect AI)** package: its prompt-injection
+  scanner detects **0%** of these attacks and its Presidio-backed PII scanner only **0.50
+  detection at 0.20 FPR** (vs C4's **1.00 / 0.00**), because off-the-shelf I/O filters scan
+  per message with no session state — eliminating the straw-man critique with the real tool.
+
 - Built a **reproducible, zero-cost attack/defense evaluation harness**: an own
   aggregation-inference attack suite (354 labelled scenarios over a 371-member synthetic
   population) + AgentDojo integration, a (τ, k) parameter sweep tracing the detection–FPR
