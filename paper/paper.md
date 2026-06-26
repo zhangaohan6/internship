@@ -1,7 +1,7 @@
 # AggreGuard: Trace-Level, Aggregation-Aware Guardrails for LLM Agents
 
-*Workshop short-paper draft. Author list, venue formatting, and bibliographic details
-(arXiv identifiers, author names) must be finalized before submission; named tools and
+*Workshop short-paper draft. The three arXiv references are verified (2026-06-26); author
+list and venue formatting remain to be finalized before submission. Named tools and
 standards are cited as software/products rather than papers.*
 
 ## Abstract
@@ -297,16 +297,19 @@ Several concrete steps would turn this demonstration into a full evaluation. Fir
 
 ## References
 
-> arXiv identifiers and author lists below must be verified against sources before
-> submission; entries without identifiers are software, products, or standards.
+> arXiv entries [1]–[3] verified against arXiv on 2026-06-26 (title, authors, year);
+> entries without identifiers are software, products, or standards.
 
-[1] AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for
-LLM Agents. arXiv:2406.13352, 2024.
+[1] E. Debenedetti, J. Zhang, M. Balunović, L. Beurer-Kellner, M. Fischer, and F. Tramèr.
+AgentDojo: A Dynamic Environment to Evaluate Prompt Injection Attacks and Defenses for LLM
+Agents. arXiv:2406.13352, 2024.
 
-[2] Defeating Prompt Injections by Design (CaMeL). arXiv:2503.18813, 2025.
+[2] E. Debenedetti, I. Shumailov, T. Fan, J. Hayes, N. Carlini, D. Fabian, C. Kern, C. Shi,
+A. Terzis, and F. Tramèr. Defeating Prompt Injections by Design (CaMeL). arXiv:2503.18813,
+2025.
 
-[3] Task Shield: Enforcing Task Alignment to Defend Against Indirect Prompt Injection in
-LLM Agents. arXiv:2412.16682, 2024.
+[3] F. Jia, T. Wu, X. Qin, and A. Squicciarini. The Task Shield: Enforcing Task Alignment to
+Defend Against Indirect Prompt Injection in LLM Agents. arXiv:2412.16682, 2024.
 
 [4] L. Sweeney. k-Anonymity: A Model for Protecting Privacy. International Journal of
 Uncertainty, Fuzziness and Knowledge-Based Systems, 10(5):557–570, 2002.
