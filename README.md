@@ -28,3 +28,8 @@ Each project lives in its own folder.
   Holt trend / weekly seasonal-naive) with a **backtest that auto-selects the best per SKU**,
   then safety stock, reorder point, days-of-cover, **stockout risk**, and an MOQ-rounded reorder
   quantity. Zero-dependency core, CLI, Streamlit dashboard, 8 unit tests. Synthetic data.
+
+- **[ecom-ads-optimizer/](ecom-ads-optimizer/)** — a multi-platform **ad / ROAS optimizer**
+  (Google / Meta / TikTok): per-campaign ROAS / ACoS / CPA / CTR / CVR, **wasted-spend**
+  detection below breakeven ROAS, and a **budget-reallocation** projection. CLI + Streamlit +
+  6 tests. Validated on a real-structured 1,800-row, $11M-spend ad dataset.
