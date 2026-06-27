@@ -35,6 +35,7 @@ def build_rows(skus, horizon=30, service=0.95, review_period=14):
 def main():
     ap = argparse.ArgumentParser(description="Demand forecast & restock planner")
     ap.add_argument("--csv", help="SKU CSV")
+    ap.add_argument("--real", help="path to UCI Online Retail .xlsx/.csv (real data)")
     ap.add_argument("--n", type=int, default=8)
     ap.add_argument("--days", type=int, default=180)
     ap.add_argument("--seed", type=int, default=0)
@@ -43,7 +44,13 @@ def main():
     ap.add_argument("--out", default="out")
     args = ap.parse_args()
 
-    skus = load_skus_csv(args.csv) if args.csv else generate_skus(args.n, args.days, args.seed)
+    if args.real:
+        from restock.real_data import load_online_retail
+        skus = load_online_retail(args.real, top_n=args.n)
+    elif args.csv:
+        skus = load_skus_csv(args.csv)
+    else:
+        skus = generate_skus(args.n, args.days, args.seed)
     rows = build_rows(skus, horizon=args.horizon, service=args.service)
 
     os.makedirs(args.out, exist_ok=True)

@@ -45,7 +45,27 @@ Tabs: **Restock Plan** (urgency-ranked table + days-of-cover bar + PO-value metr
 **Forecast** (pick a SKU → sales history vs forecast line chart, with the auto-selected method
 and MAPE), and **About**. Tune service level / horizon or upload a real SKU CSV in the sidebar.
 
-## Plug in real data
+## Validation on REAL data (UCI Online Retail)
+
+Beyond the synthetic demo, the planner runs on a **real** transaction dataset — the UCI
+*Online Retail* set (a UK online retailer, **541,909 transactions / 4,070 products**,
+Dec 2010 – Dec 2011, [no-login download](https://archive.ics.uci.edu/static/public/352/online+retail.zip)):
+
+```bash
+pip install pandas openpyxl
+python3 plan.py --real "Online Retail.xlsx" --n 40
+```
+`restock/real_data.py` aggregates quantity-per-product-per-day into a daily sales series.
+On the top-40 products: **23 need reordering now**, recommended PO value **≈ $45k**, soonest
+stockout in **15 days**. (Inventory level and COGS aren't in transaction data, so they're set
+from documented assumptions — current stock ≈ 15–45 days of demand, COGS ≈ 40% of price.)
+
+**Finding (real-data insight).** Real demand is highly **intermittent / bursty** (wholesale
+orders, many zero-sale days), so the simple forecasters show **high MAPE on sparse SKUs** —
+a genuine limitation that motivates **intermittent-demand methods (Croston's / SBA)** as the
+next step. This is exactly the gap you cannot see on clean synthetic data.
+
+## Plug in real data (your own CSV)
 
 A CSV with one row per SKU: `sku,title,daily_sales,current_stock,lead_time_days,
 min_order_qty,unit_cost`, where `daily_sales` is a `|`-separated series of daily units
