@@ -30,6 +30,26 @@ Outputs a ranked shortlist to stdout and to `out/shortlist.md` + `out/shortlist.
 Example (synthetic, seed 0): of 200 candidates, **94 clear a 10% margin gate**; the top pick
 scores **84** with **41% margin / 202% ROI / 58% breakeven-ACoS**.
 
+## Validation on REAL Amazon data
+
+Beyond the synthetic demo, the analyzer runs on a **real** Amazon products dataset (1,001
+listings scraped via Bright Data; no-login mirror
+[here](https://raw.githubusercontent.com/luminati-io/Amazon-dataset-samples/main/amazon-products.csv)):
+
+```bash
+pip install pandas
+python3 analyze.py --real amazon-products.csv --top 10
+```
+`ecom/real_data.py` maps the real columns (price, reviews, category, sellers, weight, rating,
+Best-Sellers Rank) onto the schema; COGS and ACoS use documented seller assumptions, and
+monthly sales is a proxy derived from BSR.
+
+**Finding (real-data insight).** Of 1,001 real products, only **376 (38%) clear a 10% margin
+gate** once Amazon's referral + FBA + storage fees and ad spend are subtracted — many
+electronics are squeezed below viability. This is the kind of unit-economics reality a raw
+keyword tool (Helium 10) shows you the *inputs* for but doesn't *decide* on; this tool adds
+the profit-and-selection decision layer on top.
+
 ## Interactive dashboard
 
 ```bash

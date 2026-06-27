@@ -37,6 +37,7 @@ def build_rows(products):
 def main():
     ap = argparse.ArgumentParser(description="Product selection & profit analyzer")
     ap.add_argument("--csv", help="CSV of products (headers match the Product schema)")
+    ap.add_argument("--real", help="path to a real Amazon products CSV (Bright Data schema)")
     ap.add_argument("--n", type=int, default=200, help="synthetic products if no --csv")
     ap.add_argument("--seed", type=int, default=0)
     ap.add_argument("--top", type=int, default=15)
@@ -44,7 +45,13 @@ def main():
     ap.add_argument("--out", default="out")
     args = ap.parse_args()
 
-    products = load_products_csv(args.csv) if args.csv else generate_products(args.n, args.seed)
+    if args.real:
+        from ecom.real_data import load_amazon_csv
+        products = load_amazon_csv(args.real)
+    elif args.csv:
+        products = load_products_csv(args.csv)
+    else:
+        products = generate_products(args.n, args.seed)
     rows = build_rows(products)
     ranked = score_products(rows, min_margin=args.min_margin)
 
