@@ -22,3 +22,9 @@ Each project lives in its own folder.
   0–100 product-selection **Opportunity Score**, and a **PPC keyword** analyzer (ACoS / ROAS /
   max-profitable CPC / recommended bid). Zero-dependency core, two CLIs, a Streamlit dashboard,
   and 8 unit tests. Synthetic demo data — clone & run.
+
+- **[ecom-restock-planner/](ecom-restock-planner/)** — a **demand-forecasting + inventory**
+  tool for FBA restocking: four interpretable forecasters (moving-avg / exponential smoothing /
+  Holt trend / weekly seasonal-naive) with a **backtest that auto-selects the best per SKU**,
+  then safety stock, reorder point, days-of-cover, **stockout risk**, and an MOQ-rounded reorder
+  quantity. Zero-dependency core, CLI, Streamlit dashboard, 8 unit tests. Synthetic data.
