@@ -14,6 +14,11 @@ os.environ.setdefault("OMP_NUM_THREADS", "1")
 os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 import json
 
+# Max tool-use iterations per turn. Raised from a hard-coded 6 (which truncated
+# multi-step statistical queries as "unable to complete") to a configurable
+# default of 10; override with HIP_MAX_STEPS.
+MAX_STEPS = int(os.environ.get("HIP_MAX_STEPS", "10"))
+
 from agent_tools import (
     query_patient_data,
     predict_walking_recovery,
@@ -184,7 +189,7 @@ class HipFractureAgent:
         client = self._get_client()
         messages = list(self.history)
 
-        for _ in range(6):  # max iterations
+        for _ in range(MAX_STEPS):  # max iterations
             response = client.messages.create(
                 model="claude-sonnet-4-6",
                 max_tokens=2048,
@@ -225,9 +230,9 @@ class HipFractureAgent:
         client = self._get_client()
         messages = [{"role": "system", "content": SYSTEM_PROMPT}] + list(self.history)
 
-        for _ in range(6):
+        for _ in range(MAX_STEPS):
             response = client.chat.completions.create(
-                model="gpt-4o",
+                model=os.environ.get("OPENAI_MODEL", "gpt-4o"),
                 tools=OPENAI_TOOLS,
                 messages=messages,
             )

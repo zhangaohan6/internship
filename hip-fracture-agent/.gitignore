@@ -35,3 +35,9 @@ __pycache__/
 .ruff_cache/
 .idea/
 .DS_Store
+
+# Additional data-governance excludes (2026-07-11): eval dumps / logs / notes may
+# quote dataset-derived aggregate figures (mortality counts, rates). Exclude all.
+eval_results*.json
+*.log
+EVAL_RUN_NOTES.txt

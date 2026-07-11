@@ -352,22 +352,52 @@ class EvalResult:
     tags: list[str]
 
 
-def _extract_number(text: str) -> float | None:
-    """Extract the first percentage or decimal number from text."""
-    patterns = [
-        r"(\d+\.?\d*)\s*%",   # e.g. "7.3%"
-        r"(\d+\.?\d*)\s*percent",
-        r"(\d+\.\d+)",         # decimal
-        r"\b(\d{2,})\b",       # integer >= 10
-    ]
-    for pat in patterns:
-        m = re.search(pat, text, re.IGNORECASE)
-        if m:
-            val = float(m.group(1))
-            if "%" in pat or "percent" in pat:
-                val /= 100
-            return val
-    return None
+def _candidate_numbers(text: str) -> list[tuple[float, bool]]:
+    """Return every numeric token in `text` as (value, is_rate) pairs.
+
+    Thousands separators are stripped first ("97,429" -> 97429) — the previous
+    scorer split on the comma and read only "97", scoring correct count/age
+    answers as 0. Percentages carry is_rate=True and are normalised to [0,1].
+    """
+    t = re.sub(r"(?<=\d),(?=\d{3}\b)", "", text)  # drop thousands separators
+    cands: list[tuple[float, bool]] = []
+    for m in re.finditer(r"(\d+\.?\d*)\s*(?:%|percent)", t, re.IGNORECASE):
+        cands.append((float(m.group(1)) / 100, True))
+    for m in re.finditer(r"(?<![%\d.])\b(\d+\.?\d*)\b(?!\s*(?:%|percent))", t, re.IGNORECASE):
+        cands.append((float(m.group(1)), False))
+    return cands
+
+
+def _extract_number(text: str, expected: float | None = None) -> float | None:
+    """Extract the answer's numeric value.
+
+    When `expected` is known, select the candidate whose *kind and magnitude
+    band* matches what the question asks for (a rate vs an age vs a count),
+    instead of blindly taking the first token. This targets the ground truth's
+    semantic class — NOT its exact value — so it fixes parsing artifacts (a
+    count reported alongside a median age, a distribution's first sub-percent)
+    without peeking at the answer.
+    """
+    cands = _candidate_numbers(text)
+    if not cands:
+        return None
+
+    if expected is None:
+        # Legacy behaviour: first rate token, else first plain number.
+        for v, is_rate in cands:
+            if is_rate:
+                return v
+        return cands[0][0]
+
+    if 0 <= expected <= 1:            # a proportion / rate
+        rates = [v for v, is_rate in cands if is_rate or 0 <= v <= 1]
+        return rates[0] if rates else cands[0][0]
+    if 1 < expected <= 130:           # an age (years)
+        ages = [v for v, is_rate in cands if not is_rate and 1 <= v <= 130]
+        return ages[0] if ages else cands[0][0]
+    # a count / large integer
+    counts = [v for v, is_rate in cands if not is_rate and v >= 100]
+    return counts[0] if counts else cands[0][0]
 
 
 def _check_hallucination(answer: str, question: str) -> bool:
@@ -396,7 +426,7 @@ def evaluate_type_a(test: dict, answer: str, tool_log: list[str]) -> EvalResult:
     score = 0.5  # neutral if we can't verify
 
     if test.get("expected_value") is not None:
-        extracted = _extract_number(answer)
+        extracted = _extract_number(answer, test["expected_value"])
         if extracted is not None:
             diff = abs(extracted - test["expected_value"])
             answer_correct = diff <= test["tolerance"]

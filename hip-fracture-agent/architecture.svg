@@ -1,0 +1,76 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="1200" viewBox="0 0 1200 760" font-family="Inter, Helvetica, Arial, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#475569"/>
+    </marker>
+    <style>
+      .lbl{font-size:15px;font-weight:600;fill:#0f172a}
+      .sub{font-size:12px;fill:#475569}
+      .edge{stroke:#475569;stroke-width:1.6;fill:none;marker-end:url(#a)}
+      .tag{font-size:11px;font-weight:600;fill:#0891b2}
+    </style>
+  </defs>
+
+  <text x="30" y="42" font-size="24" font-weight="800" fill="#0f172a">Hip Fracture Clinical AI Agent</text>
+  <text x="30" y="66" font-size="14" fill="#64748b">UNSW Health Data Science Datathon 2025 · ANZHFR registry (97,429 patients) · native tool-use LLM</text>
+
+  <!-- User -->
+  <rect x="40" y="120" width="150" height="70" rx="12" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="115" y="150" class="lbl" text-anchor="middle">Clinician</text>
+  <text x="115" y="170" class="sub" text-anchor="middle">natural-language Q</text>
+
+  <!-- Agent -->
+  <rect x="260" y="108" width="250" height="94" rx="12" fill="#f5f3ff" stroke="#c4b5fd"/>
+  <text x="385" y="138" class="lbl" text-anchor="middle">Tool-Use Agent</text>
+  <text x="385" y="160" class="sub" text-anchor="middle">DeepSeek (OpenAI-compatible)</text>
+  <text x="385" y="178" class="sub" text-anchor="middle">native function-calling · no LangChain</text>
+
+  <!-- Streamlit -->
+  <rect x="40" y="250" width="150" height="60" rx="12" fill="#ecfeff" stroke="#67e8f9"/>
+  <text x="115" y="278" class="lbl" text-anchor="middle">Streamlit UI</text>
+  <text x="115" y="296" class="sub" text-anchor="middle">chat + results</text>
+
+  <!-- 4 tools -->
+  <text x="600" y="100" font-size="13" font-weight="700" fill="#334155">4 dedicated tools（意图路由）</text>
+  <rect x="600" y="112" width="560" height="66" rx="10" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="616" y="138" class="lbl">query_patient_data</text>
+  <text x="616" y="158" class="sub">人群统计 · pandas over ANZHFR 97k</text>
+
+  <rect x="600" y="190" width="560" height="66" rx="10" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="616" y="216" class="lbl">predict_walking_recovery</text>
+  <text x="616" y="236" class="sub">120 天步行恢复概率 · XGBoost</text>
+  <text x="1144" y="228" class="tag" text-anchor="end">AUC 0.84</text>
+
+  <rect x="600" y="268" width="560" height="66" rx="10" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="616" y="294" class="lbl">predict_rehab_access</text>
+  <text x="616" y="314" class="sub">康复病房可及性 · XGBoost + SHAP</text>
+  <text x="1144" y="306" class="tag" text-anchor="end">AUC 0.78</text>
+
+  <rect x="600" y="346" width="560" height="66" rx="10" fill="#fefce8" stroke="#fde047"/>
+  <text x="616" y="372" class="lbl">search_clinical_guideline</text>
+  <text x="616" y="392" class="sub">RAG · Chroma + sentence-transformers · ACSQHC 照护标准</text>
+
+  <!-- edges -->
+  <path class="edge" d="M190 155 L256 155"/>
+  <path class="edge" d="M115 250 L115 202 L256 175"/>
+  <path class="edge" d="M510 150 L596 145"/>
+  <path class="edge" d="M510 165 L596 218"/>
+  <path class="edge" d="M510 178 L596 296"/>
+  <path class="edge" d="M510 190 L596 374"/>
+
+  <!-- Eval harness -->
+  <rect x="40" y="470" width="1120" height="150" rx="12" fill="#ffffff" stroke="#e2e8f0"/>
+  <text x="60" y="500" font-size="15" font-weight="700" fill="#0f172a">Reproducible Evaluation Harness（自建评测闭环）</text>
+  <text x="60" y="528" class="sub">· A / B / C 三类自动化评测，45 题全 live 执行（非 mock）；pandas 真值校验 + 幻觉检测</text>
+  <text x="60" y="550" class="sub">· 综合得分 0.78 · 工具选择准确率 96% · 幻觉率 2.2%</text>
+  <text x="60" y="572" class="sub">· RAG 消融：指南题幻觉率 16.7% → 0%（检索把编造换成引证，临床该有的安全取舍）</text>
+  <text x="60" y="594" class="sub">· 防数据泄漏特征设计（规避时间穿越）；数据受 Data Use Agreement 约束，仅开源代码</text>
+
+  <!-- title over eval boxes: stat chips -->
+  <rect x="640" y="516" width="150" height="34" rx="8" fill="#f0fdf4" stroke="#86efac"/>
+  <text x="715" y="538" class="tag" text-anchor="middle">工具选择 96%</text>
+  <rect x="800" y="516" width="150" height="34" rx="8" fill="#fef2f2" stroke="#fca5a5"/>
+  <text x="875" y="538" font-size="11" font-weight="600" fill="#dc2626" text-anchor="middle">幻觉 2.2%</text>
+  <rect x="960" y="516" width="200" height="34" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+  <text x="1060" y="538" font-size="11" font-weight="600" fill="#2563eb" text-anchor="middle">RAG 消融 16.7%→0%</text>
+</svg>

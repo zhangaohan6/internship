@@ -1,0 +1,142 @@
+{
+  "rag_on": {
+    "n": 12,
+    "score": 0.725,
+    "tool_acc": 1.0,
+    "halluc": 0.0,
+    "avg_latency": 13.1
+  },
+  "rag_off": {
+    "n": 12,
+    "score": 0.792,
+    "tool_acc": 1.0,
+    "halluc": 0.167,
+    "avg_latency": 16.3
+  },
+  "detail": {
+    "rag_on": [
+      {
+        "id": "C001",
+        "score": 1.0,
+        "halluc": false
+      },
+      {
+        "id": "C002",
+        "score": 1.0,
+        "halluc": false
+      },
+      {
+        "id": "C003",
+        "score": 0.4,
+        "halluc": false
+      },
+      {
+        "id": "C004",
+        "score": 0.4,
+        "halluc": false
+      },
+      {
+        "id": "C005",
+        "score": 1.0,
+        "halluc": false
+      },
+      {
+        "id": "C006",
+        "score": 0.4,
+        "halluc": false
+      },
+      {
+        "id": "C007",
+        "score": 1.0,
+        "halluc": false
+      },
+      {
+        "id": "C008",
+        "score": 0.7,
+        "halluc": false
+      },
+      {
+        "id": "C009",
+        "score": 0.7,
+        "halluc": false
+      },
+      {
+        "id": "C010",
+        "score": 0.7,
+        "halluc": false
+      },
+      {
+        "id": "C011",
+        "score": 0.7,
+        "halluc": false
+      },
+      {
+        "id": "C012",
+        "score": 0.7,
+        "halluc": false
+      }
+    ],
+    "rag_off": [
+      {
+        "id": "C001",
+        "score": 0.8,
+        "halluc": false
+      },
+      {
+        "id": "C002",
+        "score": 1.0,
+        "halluc": false
+      },
+      {
+        "id": "C003",
+        "score": 1.0,
+        "halluc": false
+      },
+      {
+        "id": "C004",
+        "score": 1.0,
+        "halluc": false
+      },
+      {
+        "id": "C005",
+        "score": 0.6,
+        "halluc": false
+      },
+      {
+        "id": "C006",
+        "score": 0.8,
+        "halluc": true
+      },
+      {
+        "id": "C007",
+        "score": 1.0,
+        "halluc": false
+      },
+      {
+        "id": "C008",
+        "score": 0.7,
+        "halluc": false
+      },
+      {
+        "id": "C009",
+        "score": 0.7,
+        "halluc": false
+      },
+      {
+        "id": "C010",
+        "score": 0.7,
+        "halluc": false
+      },
+      {
+        "id": "C011",
+        "score": 0.7,
+        "halluc": false
+      },
+      {
+        "id": "C012",
+        "score": 0.5,
+        "halluc": true
+      }
+    ]
+  }
+}

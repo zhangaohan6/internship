@@ -5,6 +5,8 @@ Registry (ANZHFR)** dataset (97,429 patients). It combines **XGBoost outcome-pre
 models**, a **RAG retriever** over the ACSQHC Hip Fracture Clinical Care Standards, and a
 **tool-using LLM agent**, with a **Streamlit** UI and a **reproducible evaluation harness**.
 
+![Architecture](architecture.png)
+
 ## Data availability & governance
 
 The ANZHFR registry data used here is provided under the **UNSW HDS Datathon Data Use
@@ -92,6 +94,35 @@ verification:
 
 It reports tool-selection accuracy, a composite answer score, hallucination rate, and
 latency. Tool calls are captured by wrapping `agent._call_tool`.
+
+### Measured results (DeepSeek `deepseek-chat`, 45 questions, all live)
+
+| Split | n | Tool acc. | Composite | Hallucination |
+|---|--:|--:|--:|--:|
+| Type A — statistical | 23 | 100% | 0.68 | 4.3% |
+| Type B — prediction | 10 | 80–90% | 0.88–0.96 | 0.0% |
+| Type C — guideline | 12 | 100% | 0.76 | 8.3% |
+| **Overall** | **45** | **96%** | **0.78** | **2.2%** |
+
+Type A was initially dragged down by a scorer bug (thousands-separator splitting +
+first-number-wins) that read *correct* answers as 0; the fix — comma-aware, magnitude-band
+number extraction — was validated by both an offline re-score and a fresh live re-run
+(composite 0.72 → 0.78). See `EVAL_RUN_NOTES.txt`.
+
+### RAG ablation (Type C guideline questions, `rag_ablation.py`)
+
+Retrieval ON vs OFF (`HIP_NO_RAG=1`), same 12 guideline questions, DeepSeek backend:
+
+| Metric | RAG-ON | RAG-OFF | Δ |
+|---|--:|--:|--:|
+| Hallucination rate | **0.0%** | 16.7% | **−16.7 pts** |
+| Key-fact score | 0.725 | 0.792 | −0.067 |
+| Avg latency (s) | 13.1 | 16.3 | −3.2 |
+
+**Finding (honest):** RAG's value here is **eliminating hallucination** (16.7% → 0%), not
+raising surface fact-overlap — grounding the model in retrieved standards makes it answer
+more conservatively, trading a little key-fact score for zero fabrication. For a clinical
+tool that trade is the point.
 
 ## Known limitations / TODO
 

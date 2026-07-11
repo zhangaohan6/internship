@@ -296,6 +296,11 @@ def search_clinical_guideline(query: str) -> str:
     - "What are the pain management guidelines in the ED?"
     - "What bone protection medications are recommended?"
     """
+    # Ablation switch: when HIP_NO_RAG=1 the retriever is bypassed so the model
+    # must answer clinical-guideline questions from parametric knowledge alone.
+    # Used to quantify RAG's contribution to guideline accuracy / hallucination.
+    if os.environ.get("HIP_NO_RAG") == "1":
+        return "No guideline retrieval available; answer from your own knowledge."
     try:
         from rag_pipeline import search_guidelines
         results = search_guidelines(query, k=3)
