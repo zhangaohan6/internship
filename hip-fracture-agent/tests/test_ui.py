@@ -8,7 +8,7 @@ class DemoAgent:
     def __init__(self, **kwargs):
         self.trace=[{'kind':'tool','tool':'query_patient_data','status':'ok','duration_ms':1}]
         self.last_run={'status':'completed','tool_calls':1}
-    def chat(self, message): return 'Synthetic fixture response.'
+    def chat(self, message, **kwargs): return 'Synthetic fixture response.'
 
 
 class UITests(unittest.TestCase):

@@ -32,8 +32,10 @@ class StatisticsArguments(Contract):
     question: str = Field(min_length=1, max_length=2000)
     metric: Literal['count', 'proportion', 'mean', 'median', 'distribution'] | None = None
     column: Column | None = None
-    filters: list[CohortFilter] = Field(default_factory=list, max_length=8)
-    event: CohortFilter | None = None
+    filters: list[CohortFilter] = Field(default_factory=list, max_length=8,
+        description='ALL conditions restricting the cohort. For a conditional COUNT, put the condition here, not in event.')
+    event: CohortFilter | None = Field(default=None,
+        description='Only for metric=proportion. For count, omit event and add its condition to filters.')
 
     @model_validator(mode='after')
     def coherent_plan(self):
@@ -48,10 +50,11 @@ class StatisticsArguments(Contract):
 
 class PatientFeatures(Contract):
     age: Number = Field(ge=0, le=120)
-    sex: StrictInt | None = Field(default=None, ge=1, le=3)
-    asa: StrictInt | None = Field(default=None, ge=1, le=5)
+    sex: StrictInt | None = Field(default=None, ge=1, le=3, description='1 male; 2 female. Omit if not supplied; use any other code only if explicitly provided.')
+    asa: StrictInt | None = Field(default=None, ge=1, le=5, description='ASA I=1, II=2, III=3, IV=4, V=5. Omit if not supplied.')
     frailty: StrictInt | None = Field(default=None, ge=1, le=9)
-    walk: StrictInt | None = Field(default=None, ge=1, le=4)
+    walk: StrictInt | None = Field(default=None, ge=1, le=4,
+        description='Pre-admission mobility: 1 without aids; 2 walking stick; 3 walking frame; 4 wheelchair. Omit if not supplied.')
     cogstat: StrictInt | None = Field(default=None, ge=1, le=2)
     ftype: StrictInt | None = Field(default=None, ge=1, le=4)
     ptype: StrictInt | None = Field(default=None, ge=1, le=2)
@@ -92,7 +95,8 @@ DESCRIPTIONS = {
     'compare_evidence': 'Compute a comparison from evidence IDs already returned by tools. First obtain both source results. difference = left-right; ratio = left/right; relative_change = (left-right)/right. Matching units/outcomes required; zero denominator rejected. Never invent evidence IDs or supply guessed numbers.',
     'query_patient_data': (
         'Read-only aggregate query over LOCAL SYNTHETIC Datathon data. Always supply a structured '
-        'metric and all cohort filters. For a proportion, event describes the numerator and its '
+        'metric and all cohort filters. For a COUNT with conditions use filters and OMIT event. '
+        'For a proportion, event describes the numerator and its '
         'column defines the non-missing denominator. Example ASA IV 30-day mortality: metric '
         'proportion, filters [{column:asa,op:eq,value:4}], event {column:mort30d,op:eq,value:2}. '
         'Codes: sex 1 male/2 female; mortality 1 alive/2 deceased; fwalk2 1 recovered/2 not; '

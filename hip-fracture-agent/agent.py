@@ -8,6 +8,7 @@ import re
 import time
 import uuid
 from evidence import EvidenceLedger
+from answer_contract import AnswerContract
 from dataclasses import dataclass
 from pydantic import ValidationError
 from tool_contracts import CONTRACTS, ANTHROPIC_TOOLS, OPENAI_TOOLS
@@ -18,6 +19,9 @@ its models as clinically validated. Distinguish population statistics, model pre
 and original guideline evidence. Use the appropriate tool before making factual claims.
 For query_patient_data always provide an explicit metric and ALL cohort filters; a
 proportion requires an event and uses non-missing values of that event column as its denominator.
+For a COUNT satisfying conditions, put every condition in filters and omit event.
+Never substitute a proportion query for a requested count. In conditional tasks, first
+observe the condition's result before selecting the next tool call.
 Use the returned numerator, denominator, filters and units to explain the answer.
 Never infer a subgroup statistic from an overall statistic. Ask a clarifying question when
 needed. For prediction tools supply only known patient fields; never invent missing fields.
@@ -48,7 +52,16 @@ def _call_tool(name, tool_input):
         return _error('unknown_tool', 'Select one of the declared tools.')
     try:
         validated = CONTRACTS[name].model_validate(tool_input)
-    except (ValidationError, ValueError, TypeError):
+    except ValidationError as exc:
+        # Only declared schema paths and error codes: never echo input or exception context.
+        declared = {'patient', 'age', 'sex', 'asa', 'frailty', 'walk', 'cogstat', 'ftype', 'ptype',
+                    'uresidence', 'analges', 'question', 'metric', 'column', 'filters', 'event', 'op', 'value', 'query'}
+        issues = [{'path': '.'.join(str(p) if p in declared else '*' for p in e['loc']), 'type': e['type']}
+                  for e in exc.errors(include_input=False, include_context=False, include_url=False)[:8]]
+        hint = ('For count, put every condition in filters and omit event. Proportion requires event. '
+                'Mean/median/distribution require column. Prediction requires age and declared numeric codes.')
+        return json.dumps(dict(ok=False, error=dict(code='invalid_arguments', message=hint, issues=issues)))
+    except (ValueError, TypeError):
         return _error('invalid_arguments', 'Arguments do not match the declared schema. Correct names, types, ranges and required fields.')
     try:
         import agent_tools
@@ -77,6 +90,7 @@ class AgentConfig:
     max_output_chars: int = 16000
     max_tool_retries: int = 1
     max_evidence_entries: int = 64
+    max_answer_repairs: int = 2
 
     def __post_init__(self):
         if self.provider not in ('anthropic', 'openai'):
@@ -89,6 +103,8 @@ class AgentConfig:
             raise ValueError('Invalid tool retry or evidence budget')
         if not 1 <= self.max_history_turns <= 50 or self.max_output_chars < 256:
             raise ValueError('Invalid history/output budget')
+        if not 0 <= self.max_answer_repairs <= 3:
+            raise ValueError('Invalid answer repair budget')
 
 
 class HipFractureAgent:
@@ -224,19 +240,22 @@ class HipFractureAgent:
                                cached=cached, duration_ms=round((time.monotonic()-start)*1000, 2)))
         return result, ok
 
-    def chat(self, user_message):
+    def chat(self, user_message, *, answer_contract: AnswerContract | None = None):
         if not isinstance(user_message, str) or not user_message.strip() or len(user_message) > 16000:
             raise ValueError('Message must contain 1 to 16000 characters')
         start = time.monotonic()
         previous_evidence = copy.deepcopy(self.evidence)
         self._transient_failures = {}
         self.trace = []
-        self.last_run = dict(run_id=str(uuid.uuid4()), status='running', steps=0, tool_calls=0, tokens=0)
+        self.last_run = dict(run_id=str(uuid.uuid4()), status='running', steps=0, tool_calls=0, tokens=0,
+                             answer_repairs=0, answer_validated=False)
         messages = copy.deepcopy(self.history)
         offset = len(messages)
-        messages.append(dict(role='user', content=user_message))
+        messages.append(dict(role='user', content=user_message + (answer_contract.instruction() if answer_contract else '')))
         cache, successful = {}, 0
         answer = 'I could not complete the request within the configured execution budget. Please narrow the question.'
+        if answer_contract:
+            answer = answer_contract.abstention()
         status = 'budget_exhausted'
         try:
             for step in range(self.config.max_steps):
@@ -246,9 +265,27 @@ class HipFractureAgent:
                 self.trace.append(dict(kind='model', step=step+1, tool_calls=len(calls), tokens=tokens))
                 if not calls:
                     if self.last_run['tool_calls'] and not successful:
-                        answer = 'I could not obtain valid tool evidence. Please check the requested fields, local data or guideline PDFs; I cannot provide an unsupported result.'
+                        answer = answer_contract.abstention() if answer_contract else 'I could not obtain valid tool evidence. Please check the requested fields, local data or guideline PDFs; I cannot provide an unsupported result.'
                         status = 'no_evidence'
                     else:
+                        if answer_contract:
+                            validated, errors = answer_contract.check(text, self.evidence.entries)
+                            self.trace.append(dict(kind='answer_validation', model_step=step+1,
+                                                   status='error' if errors else 'ok', error_codes=errors))
+                            if errors:
+                                if self.last_run['answer_repairs'] < self.config.max_answer_repairs and step + 1 < self.config.max_steps:
+                                    self.last_run['answer_repairs'] += 1
+                                    messages.append(assistant)
+                                    messages.append(dict(role='user', content='Application validation rejected the draft: '
+                                        + ', '.join(errors) + '. Re-read the returned evidence and correct the draft. '
+                                        + 'Do not guess a value or reference. ' + answer_contract.instruction()))
+                                    continue
+                                answer, status = answer_contract.abstention(), 'answer_rejected'
+                                break
+                            self.last_run['answer_validated'] = True
+                            answer = answer_contract.render(validated)
+                            status = 'completed' if successful else 'no_tool_evidence'
+                            break
                         answer = text or 'No answer was returned. Please clarify your question.'
                         status = 'completed' if successful else 'no_tool_evidence'
                     break

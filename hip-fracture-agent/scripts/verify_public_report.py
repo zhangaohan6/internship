@@ -7,9 +7,11 @@ from collections import Counter, defaultdict
 import hashlib
 import json
 from pathlib import Path
+import subprocess
 
 ROOT = Path(__file__).resolve().parents[1]
 REPORT = ROOT / 'reports' / '2026-11-15-deepseek'
+BASELINE_COMMIT = 'acb3cfa991b9d5047f2bf90772a16e8ba9f749f8'
 
 
 def require(condition, message):
@@ -57,14 +59,20 @@ def verify():
     require(sum(r['model_steps'] for r in rows) == summary['total_model_steps'], 'Step count mismatch')
     require(sorted({m for r in rows for m in r['resolved_models']}) == summary['resolved_models'], 'Model name mismatch')
 
-    module = ast.parse((ROOT / 'run_live_suite.py').read_text())
+    # The baseline is immutable. Later upgrades must not pretend its score applies
+    # to the working tree; resolve the exact evaluated source from the public commit.
+    def baseline_file(name):
+        return subprocess.check_output(['git', '-C', str(ROOT), 'show',
+                                        f'{BASELINE_COMMIT}:hip-fracture-agent/{name}'])
+    module = ast.parse(baseline_file('run_live_suite.py').decode())
     files = next(ast.literal_eval(node.value) for node in module.body
                  if isinstance(node, ast.Assign) and any(isinstance(t, ast.Name) and t.id == 'SOURCE_FILES' for t in node.targets))
-    source_hash = hashlib.sha256(b''.join((ROOT / name).read_bytes() for name in files)).hexdigest()
-    require(source_hash == manifest['source_sha256'], 'Current source differs from the evaluated version')
+    source_hash = hashlib.sha256(b''.join(baseline_file(name) for name in files)).hexdigest()
+    require(source_hash == manifest['source_sha256'], 'Pinned baseline source differs from the evaluated version')
     o = summary['overall']
     print(f"Verified {o['passed_runs']}/{o['runs']} trial passes and {o['all_repeats_passed_tasks']}/{o['unique_tasks']} tasks passing both repeats.")
-    print('Evaluated source fingerprint matches. Private answers and data were not regraded.')
+    print(f'Evaluated source fingerprint matches historical commit {BASELINE_COMMIT}.')
+    print('This does not validate the current working tree. Private answers and data were not regraded.')
 
 
 if __name__ == '__main__':

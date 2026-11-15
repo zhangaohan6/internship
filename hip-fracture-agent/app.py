@@ -10,6 +10,7 @@ os.environ.setdefault("KMP_DUPLICATE_LIB_OK", "TRUE")
 import sys
 import hashlib
 from agent import AgentConfig
+from answer_contract import AnswerContract
 import json
 import streamlit as st
 import pandas as pd
@@ -36,6 +37,10 @@ with st.sidebar:
     base_url = st.text_input("API base URL (optional)", key=f"base_{provider}", value=os.environ.get(
         "ANTHROPIC_BASE_URL" if provider == "anthropic" else "OPENAI_BASE_URL", ""))
     agent_config = AgentConfig(provider=provider, model=model or None, base_url=base_url or None)
+    verified_numeric = st.checkbox('Require a source-linked numeric answer', value=False)
+    include_citation = st.checkbox('Include a guideline excerpt', value=False, disabled=not verified_numeric)
+    if verified_numeric:
+        st.caption('For a single statistic, prediction or comparison. Unsupported answers are withheld.')
     identity = (provider, model, base_url, hashlib.sha256(api_key.encode()).hexdigest())
     if st.session_state.get("agent_identity") != identity:
         st.session_state.agent_identity = identity
@@ -123,7 +128,8 @@ with tabs[0]:
                     if st.session_state.agent is None:
                         from agent import HipFractureAgent
                         st.session_state.agent = HipFractureAgent(config=agent_config, api_key=api_key)
-                    answer = st.session_state.agent.chat(user_input)
+                    contract = AnswerContract(require_citation=include_citation) if verified_numeric else None
+                    answer = st.session_state.agent.chat(user_input, answer_contract=contract)
                     st.markdown(answer)
                     trace = list(st.session_state.agent.trace)
                     run = dict(st.session_state.agent.last_run)

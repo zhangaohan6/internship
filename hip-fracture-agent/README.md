@@ -7,7 +7,19 @@ Streamlit interface. It is a research demonstration, not a clinically validated 
 
 **Published evidence:** [live evaluation report](reports/2026-11-15-deepseek/README.md) · [all 300 redacted trial records](reports/2026-11-15-deepseek/trials.json) · [scoring and limitations](EVALUATION.md)
 
-## Multi-step evaluation update 2026-11-15
+## Latest: evidence-linked output validation
+
+The optional [answer contract](OUTPUT_VALIDATION.md) checks numeric claims, units,
+evidence IDs and original-PDF excerpts, with at most two repair requests within
+the shared step budget. Streamlit exposes this as **Require a source-linked numeric answer**.
+
+**New real-model regression:** [296/300 trials; 147/150 tasks passing both repeats](reports/2026-11-15-output-validation/).
+This reuses inspected baseline cases, so it is not a fresh blind holdout. All four
+failures are published. 71 offline tests pass. The baseline below belongs to
+commit `acb3cfa991b9d5047f2bf90772a16e8ba9f749f8`; its 93.7% score does not describe
+this upgraded source. Each report has its own source fingerprint and purpose.
+
+## Historical multi-step baseline, 2026-11-15
 
 The Agent assigns session-bound evidence IDs to tool results. `compare_evidence` performs
 checked arithmetic using results the model has already observed, rejecting guessed IDs in
@@ -192,6 +204,7 @@ model execution. This project does not provide clinical decision automation.
 | File | Role |
 |---|---|
 | `agent.py` | Provider adapters, bounded execution, history, traces |
+| `answer_contract.py` | Evidence-linked final-answer validation and bounded repair contract |
 | `tool_contracts.py` | Provider-independent Pydantic schemas |
 | `statistics_query.py` | Deterministic cohort aggregates |
 | `agent_tools.py` | Four source tools and explicit error results |

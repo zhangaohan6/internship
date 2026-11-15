@@ -16,13 +16,14 @@ from urllib.parse import urlparse
 import pandas as pd
 from dotenv import dotenv_values
 from agent import AgentConfig,HipFractureAgent,_call_tool
+from answer_contract import AnswerContract
 import agent_tools
 from eval_v2 import build_cases,canonical_plan,reference_value,score_answer,ANSWER_FORMAT,wilson
 from eval_tasks import build_tasks,expected,grade,FaultDispatch,final_prompt
 
 ROOT=Path(__file__).resolve().parent
 SOURCE_FILES=['agent.py','agent_tools.py','train_model.py','tool_contracts.py','statistics_query.py','evidence.py',
-              'rag_pipeline.py','eval_v2.py','eval_tasks.py','run_live_suite.py']
+              'rag_pipeline.py','eval_v2.py','eval_tasks.py','run_live_suite.py','answer_contract.py']
 
 
 def digest(value):
@@ -58,7 +59,7 @@ def prediction_reference(tool,patient_json):
     return result['data']['risk_probability']
 
 
-def run_one(suite,spec,repeat,config,key,df):
+def run_one(suite,spec,repeat,config,key,df,validated_output=False):
     start=time.monotonic()
     row={'job_id':f'{suite}:{spec["id"]}:{repeat}','suite':suite,'id':spec['id'],
          'family':spec['family'],'split':spec['split'],'repeat':repeat,'transport':'real_api'}
@@ -70,7 +71,8 @@ def run_one(suite,spec,repeat,config,key,df):
         if suite=='statistics':
             value,unit=reference_value(df,spec)
             prompt=spec['question']+ANSWER_FORMAT
-            answer=agent.chat(prompt)
+            contract=AnswerContract(unit=unit,export_evidence=False) if validated_output else None
+            answer=agent.chat(prompt,answer_contract=contract)
             turns.append({'question':prompt,'answer':answer,'run':dict(agent.last_run),'trace':list(agent.trace)})
             selected=any(n=='query_patient_data' for n,_ in fault.calls)
             correct_plan=False
@@ -83,15 +85,21 @@ def run_one(suite,spec,repeat,config,key,df):
                 parsed=json.loads(answer)
             except (ValueError,TypeError):
                 parsed={}
-            model_abstained=isinstance(parsed,dict) and parsed.get('abstained') is True and parsed.get('value') is None
-            runtime_abstained=agent.last_run.get('status') in ('no_evidence','budget_exhausted')
+            runtime_abstained=agent.last_run.get('status') in ('no_evidence','budget_exhausted','answer_rejected')
+            model_abstained=not runtime_abstained and isinstance(parsed,dict) and parsed.get('abstained') is True and parsed.get('value') is None
             row.update(tool_selected=selected,plan_correct=bool(correct_plan),answer_schema_valid=schema,numeric_correct=correct_answer,
                        task_success=bool(correct_plan and correct_answer),model_abstained=model_abstained,runtime_abstained=runtime_abstained)
         else:
             value,plans=expected(spec,df,lambda t,p:prediction_reference(t,json.dumps(p,sort_keys=True)))
             for i,message in enumerate(spec['messages']):
                 prompt=message+(final_prompt(spec) if i==len(spec['messages'])-1 else ANSWER_FORMAT if spec['family']=='context_refinement' else '')
-                answer=agent.chat(prompt)
+                contract=None
+                if validated_output:
+                    if i==len(spec['messages'])-1:
+                        contract=AnswerContract(unit=spec['unit'],require_citation=spec['expected_kind']=='retrieval')
+                    elif spec['family']=='context_refinement':
+                        contract=AnswerContract(unit='numeric',export_evidence=False)
+                answer=agent.chat(prompt,answer_contract=contract)
                 turns.append({'question':prompt,'answer':answer,'run':dict(agent.last_run),'trace':list(agent.trace)})
             row.update(grade(spec,answer,value,plans,agent,turns,fault))
             row['fault']=spec.get('fault')
@@ -106,6 +114,8 @@ def run_one(suite,spec,repeat,config,key,df):
     row['tokens']=sum(t['run'].get('tokens',0) for t in turns)
     row['resolved_models']=sorted({m for t in turns for m in t['run'].get('resolved_models',[])})
     row['tool_calls']=sum(t['run'].get('tool_calls',0) for t in turns)
+    row['answer_repairs']=sum(t['run'].get('answer_repairs',0) for t in turns)
+    row['answer_validated']=agent.last_run.get('answer_validated',False)
     # Kept only in an ignored private audit directory. Public summaries omit this block.
     row['audit']={'turns':turns,'evidence':agent.evidence.entries,'last_run':agent.last_run}
     return row
@@ -163,7 +173,9 @@ def execute(args):
     data_path=Path(args.data or agent_tools.DATA_PATH)
     guideline_dir=Path(os.environ.get('HIP_GUIDELINES_DIR',ROOT/'guidelines'))
     artifact_paths=sorted((ROOT/'models').glob('*.pkl'))+sorted(guideline_dir.glob('*.pdf'))
-    manifest={'runner_version':'live-suite-v3.0','config':{k:v for k,v in asdict(config).items() if k!='base_url'},
+    manifest={'runner_version':'live-suite-v4.0','validated_output':getattr(args,'validated_output',False),
+              'evaluation_use':'regression_after_baseline_inspection',
+              'config':{k:v for k,v in asdict(config).items() if k!='base_url'},
               'endpoint_host':urlparse(config.base_url).hostname if config.base_url else ('api.anthropic.com' if config.provider=='anthropic' else 'api.openai.com'),
               'endpoint_path':urlparse(config.base_url).path if config.base_url else '/',
               'split':args.split,'repeats':args.repeats,'planned_jobs':len(jobs),'case_sha256':digest(specifications),
@@ -200,7 +212,7 @@ def execute(args):
     stop=threading.Event()
     def worker(job):
         if stop.is_set():return None
-        result=run_one(*job,config,key,df)
+        result=run_one(*job,config,key,df,validated_output=getattr(args,'validated_output',False))
         if result.get('provider_error') in ('insufficient_credit','authentication','permission'):
             stop.set()
         return result
@@ -246,6 +258,7 @@ if __name__=='__main__':
     parser.add_argument('--data')
     parser.add_argument('--output-dir',required=True)
     parser.add_argument('--resume',action='store_true')
+    parser.add_argument('--validated-output',action='store_true',help='Validate answers against actual tool evidence, with bounded repair')
     args=parser.parse_args()
     try:
         result=execute(args)
