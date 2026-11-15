@@ -1,0 +1,381 @@
+{
+  "overall": {
+    "runs": 300,
+    "unique_tasks": 150,
+    "passed_runs": 281,
+    "run_success_rate": 0.9366666666666666,
+    "all_repeats_passed_tasks": 135,
+    "consistent_task_rate": 0.9,
+    "nominal_wilson95_for_consistent_tasks": [
+      0.8416,
+      0.9385
+    ],
+    "runtime_enforced_abstentions": 16,
+    "model_reported_abstentions": 5,
+    "provider_errors": 0,
+    "trials_with_model_response": 300,
+    "p50_latency_ms": 3725.7200000000003,
+    "p95_latency_ms": 6128.04
+  },
+  "by_suite": {
+    "statistics": {
+      "runs": 192,
+      "unique_tasks": 96,
+      "passed_runs": 184,
+      "run_success_rate": 0.9583333333333334,
+      "all_repeats_passed_tasks": 89,
+      "consistent_task_rate": 0.9270833333333334,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.8571,
+        0.9642
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 192,
+      "p50_latency_ms": 3466.465,
+      "p95_latency_ms": 5222.34
+    },
+    "workflow": {
+      "runs": 108,
+      "unique_tasks": 54,
+      "passed_runs": 97,
+      "run_success_rate": 0.8981481481481481,
+      "all_repeats_passed_tasks": 46,
+      "consistent_task_rate": 0.8518518518518519,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.734,
+        0.923
+      ],
+      "runtime_enforced_abstentions": 16,
+      "model_reported_abstentions": 5,
+      "provider_errors": 0,
+      "trials_with_model_response": 108,
+      "p50_latency_ms": 4788.75,
+      "p95_latency_ms": 6793.05
+    }
+  },
+  "by_family": {
+    "statistics/age80": {
+      "runs": 24,
+      "unique_tasks": 12,
+      "passed_runs": 24,
+      "run_success_rate": 1.0,
+      "all_repeats_passed_tasks": 12,
+      "consistent_task_rate": 1.0,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.7575,
+        1
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 24,
+      "p50_latency_ms": 3452.755,
+      "p95_latency_ms": 4611.98
+    },
+    "statistics/female": {
+      "runs": 24,
+      "unique_tasks": 12,
+      "passed_runs": 23,
+      "run_success_rate": 0.9583333333333334,
+      "all_repeats_passed_tasks": 11,
+      "consistent_task_rate": 0.9166666666666666,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.6461,
+        0.9851
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 24,
+      "p50_latency_ms": 3522.15,
+      "p95_latency_ms": 4700.17
+    },
+    "statistics/geriatric": {
+      "runs": 24,
+      "unique_tasks": 12,
+      "passed_runs": 24,
+      "run_success_rate": 1.0,
+      "all_repeats_passed_tasks": 12,
+      "consistent_task_rate": 1.0,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.7575,
+        1
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 24,
+      "p50_latency_ms": 3853.135,
+      "p95_latency_ms": 6550.85
+    },
+    "statistics/mean_frailty": {
+      "runs": 24,
+      "unique_tasks": 12,
+      "passed_runs": 22,
+      "run_success_rate": 0.9166666666666666,
+      "all_repeats_passed_tasks": 10,
+      "consistent_task_rate": 0.8333333333333334,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.552,
+        0.953
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 24,
+      "p50_latency_ms": 3280.865,
+      "p95_latency_ms": 4295.17
+    },
+    "statistics/median_age": {
+      "runs": 24,
+      "unique_tasks": 12,
+      "passed_runs": 23,
+      "run_success_rate": 0.9583333333333334,
+      "all_repeats_passed_tasks": 11,
+      "consistent_task_rate": 0.9166666666666666,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.6461,
+        0.9851
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 24,
+      "p50_latency_ms": 3405.935,
+      "p95_latency_ms": 5372.95
+    },
+    "statistics/median_frailty": {
+      "runs": 24,
+      "unique_tasks": 12,
+      "passed_runs": 20,
+      "run_success_rate": 0.8333333333333334,
+      "all_repeats_passed_tasks": 9,
+      "consistent_task_rate": 0.75,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.4677,
+        0.9111
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 24,
+      "p50_latency_ms": 3330.2200000000003,
+      "p95_latency_ms": 4576.26
+    },
+    "statistics/mort365": {
+      "runs": 24,
+      "unique_tasks": 12,
+      "passed_runs": 24,
+      "run_success_rate": 1.0,
+      "all_repeats_passed_tasks": 12,
+      "consistent_task_rate": 1.0,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.7575,
+        1
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 24,
+      "p50_latency_ms": 3421.6549999999997,
+      "p95_latency_ms": 4026.2
+    },
+    "statistics/rehab": {
+      "runs": 24,
+      "unique_tasks": 12,
+      "passed_runs": 24,
+      "run_success_rate": 1.0,
+      "all_repeats_passed_tasks": 12,
+      "consistent_task_rate": 1.0,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.7575,
+        1
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 24,
+      "p50_latency_ms": 3735.51,
+      "p95_latency_ms": 6442.89
+    },
+    "workflow/cohort_difference": {
+      "runs": 12,
+      "unique_tasks": 6,
+      "passed_runs": 12,
+      "run_success_rate": 1.0,
+      "all_repeats_passed_tasks": 6,
+      "consistent_task_rate": 1.0,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.6097,
+        1
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 12,
+      "p50_latency_ms": 5106.0599999999995,
+      "p95_latency_ms": 6128.04
+    },
+    "workflow/cohort_ratio": {
+      "runs": 12,
+      "unique_tasks": 6,
+      "passed_runs": 12,
+      "run_success_rate": 1.0,
+      "all_repeats_passed_tasks": 6,
+      "consistent_task_rate": 1.0,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.6097,
+        1
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 12,
+      "p50_latency_ms": 4811.115,
+      "p95_latency_ms": 5300.92
+    },
+    "workflow/conditional_followup": {
+      "runs": 12,
+      "unique_tasks": 6,
+      "passed_runs": 7,
+      "run_success_rate": 0.5833333333333334,
+      "all_repeats_passed_tasks": 2,
+      "consistent_task_rate": 0.3333333333333333,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.0968,
+        0.7
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 12,
+      "p50_latency_ms": 5202.895,
+      "p95_latency_ms": 7329.92
+    },
+    "workflow/context_refinement": {
+      "runs": 12,
+      "unique_tasks": 6,
+      "passed_runs": 11,
+      "run_success_rate": 0.9166666666666666,
+      "all_repeats_passed_tasks": 5,
+      "consistent_task_rate": 0.8333333333333334,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.4365,
+        0.9699
+      ],
+      "runtime_enforced_abstentions": 1,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 12,
+      "p50_latency_ms": 5839.674999999999,
+      "p95_latency_ms": 6950.3
+    },
+    "workflow/edge_cases": {
+      "runs": 12,
+      "unique_tasks": 6,
+      "passed_runs": 9,
+      "run_success_rate": 0.75,
+      "all_repeats_passed_tasks": 4,
+      "consistent_task_rate": 0.6666666666666666,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.3,
+        0.9032
+      ],
+      "runtime_enforced_abstentions": 3,
+      "model_reported_abstentions": 5,
+      "provider_errors": 0,
+      "trials_with_model_response": 12,
+      "p50_latency_ms": 3507.275,
+      "p95_latency_ms": 5084.11
+    },
+    "workflow/permanent_failure": {
+      "runs": 12,
+      "unique_tasks": 6,
+      "passed_runs": 12,
+      "run_success_rate": 1.0,
+      "all_repeats_passed_tasks": 6,
+      "consistent_task_rate": 1.0,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.6097,
+        1
+      ],
+      "runtime_enforced_abstentions": 12,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 12,
+      "p50_latency_ms": 4356.73,
+      "p95_latency_ms": 5034.69
+    },
+    "workflow/prediction_comparison": {
+      "runs": 12,
+      "unique_tasks": 6,
+      "passed_runs": 12,
+      "run_success_rate": 1.0,
+      "all_repeats_passed_tasks": 6,
+      "consistent_task_rate": 1.0,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.6097,
+        1
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 12,
+      "p50_latency_ms": 4706.764999999999,
+      "p95_latency_ms": 6107.82
+    },
+    "workflow/retrieval_and_stats": {
+      "runs": 12,
+      "unique_tasks": 6,
+      "passed_runs": 10,
+      "run_success_rate": 0.8333333333333334,
+      "all_repeats_passed_tasks": 5,
+      "consistent_task_rate": 0.8333333333333334,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.4365,
+        0.9699
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 12,
+      "p50_latency_ms": 4975.45,
+      "p95_latency_ms": 11592.61
+    },
+    "workflow/transient_failure": {
+      "runs": 12,
+      "unique_tasks": 6,
+      "passed_runs": 12,
+      "run_success_rate": 1.0,
+      "all_repeats_passed_tasks": 6,
+      "consistent_task_rate": 1.0,
+      "nominal_wilson95_for_consistent_tasks": [
+        0.6097,
+        1
+      ],
+      "runtime_enforced_abstentions": 0,
+      "model_reported_abstentions": 0,
+      "provider_errors": 0,
+      "trials_with_model_response": 12,
+      "p50_latency_ms": 4758.57,
+      "p95_latency_ms": 6349.72
+    }
+  },
+  "total_model_steps": 701,
+  "total_tokens": 2249961,
+  "resolved_models": [
+    "deepseek-flash"
+  ],
+  "limitations": [
+    "Self-authored tasks. Related query families and nested cohorts are correlated.",
+    "Statistics split holds out query families; workflow split holds out variants within each family.",
+    "Repeated runs are not independent tasks. Wilson intervals are nominal, not clinical generalisation guarantees.",
+    "Fault scenarios inject errors at tool boundaries while calling a real LLM; they are not naturally observed outage rates.",
+    "Success measures task contracts, numeric outputs and citation consistency; it does not establish clinical efficacy or full citation entailment.",
+    "Some safe abstentions are enforced by runtime guards, reported separately from model-authored abstentions."
+  ],
+  "complete": true,
+  "planned_jobs": 300
+}

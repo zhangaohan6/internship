@@ -4,7 +4,7 @@ Evaluation Framework for the Hip Fracture Clinical AI Agent.
 Evaluates 3 question types with different verification methods:
   Type A - Statistical queries   → exact/near-exact match against pandas ground truth
   Type B - Prediction queries    → tool call correctness + value consistency
-  Type C - Guideline queries     → LLM-as-judge scoring (0-3 scale)
+  Type C - Guideline queries     → heuristic fact coverage (not a clinical validation)
 
 Run:  python eval_framework.py
 Output: eval_results.json + printed summary table
@@ -63,11 +63,11 @@ def compute_ground_truth() -> dict:
 
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Test dataset (100 questions across 3 types)
+# Test dataset (45 questions across 3 types)
 # ─────────────────────────────────────────────────────────────────────────────
 
 def build_test_dataset(gt: dict) -> list[dict]:
-    """Return the 100-question eval set with ground truth annotations."""
+    """Return the 45-question eval set with ground truth annotations."""
 
     type_a = [
         # --- Mortality ---
@@ -350,6 +350,8 @@ class EvalResult:
     agent_answer: str
     error: str | None
     tags: list[str]
+    run_status: str = ''
+    tool_errors: int = 0
 
 
 def _candidate_numbers(text: str) -> list[tuple[float, bool]]:
@@ -470,7 +472,7 @@ def evaluate_type_b(test: dict, answer: str, tool_log: list[str]) -> EvalResult:
     return EvalResult(
         id=test["id"], type=test["type"], question=test["question"],
         expected_tool=test["expected_tool"], tool_called=tool_called,
-        tool_correct=tool_correct, answer_correct=tool_correct,
+        tool_correct=tool_correct, answer_correct=None,
         answer_score=round(score, 3), hallucination_detected=hallucination,
         latency_seconds=0, agent_answer=answer, error=None,
         tags=test.get("tags", []),
@@ -495,7 +497,7 @@ def evaluate_type_c(test: dict, answer: str, tool_log: list[str]) -> EvalResult:
     return EvalResult(
         id=test["id"], type=test["type"], question=test["question"],
         expected_tool=test["expected_tool"], tool_called=tool_called,
-        tool_correct=tool_correct, answer_correct=bool(fact_score > 0.5),
+        tool_correct=tool_correct, answer_correct=None,
         answer_score=round(score, 3), hallucination_detected=hallucination,
         latency_seconds=0, agent_answer=answer, error=None,
         tags=test.get("tags", []),
@@ -506,51 +508,42 @@ def run_eval(
     questions: list[dict] | None = None,
     max_questions: int = 30,
     provider: str = "anthropic",
+    agent_config=None,
+    api_key: str | None = None,
 ) -> list[EvalResult]:
     """
     Run the evaluation suite.
     By default runs 30 questions (10 of each type) to save API cost.
-    Set max_questions=100 for full eval.
+    Set max_questions to 45 for the complete legacy exploratory bank.
     """
     from agent import HipFractureAgent
 
-    gt = compute_ground_truth()
-    all_tests = questions or build_test_dataset(gt)
-
-    # Sample balanced across types
+    if max_questions < 1:
+        raise ValueError("max_questions must be positive")
+    all_tests = build_test_dataset(compute_ground_truth()) if questions is None else list(questions)
+    # Round-robin fills the exact requested count, including remainders and small pools.
     if max_questions < len(all_tests):
-        per_type = max_questions // 3
+        pools = [[q for q in all_tests if q["type"] == t] for t in ("A", "B", "C")]
         sampled = []
-        for t in ["A", "B", "C"]:
-            pool = [q for q in all_tests if q["type"] == t]
-            sampled.extend(pool[:per_type])
+        while len(sampled) < max_questions and any(pools):
+            for pool in pools:
+                if pool and len(sampled) < max_questions:
+                    sampled.append(pool.pop(0))
         all_tests = sampled
 
     print(f"Running eval on {len(all_tests)} questions ({provider} backend)...")
-    agent = HipFractureAgent(provider=provider)
+    agent = HipFractureAgent(provider=provider, config=agent_config, api_key=api_key)
 
     results = []
     for i, test in enumerate(all_tests):
         print(f"  [{i+1}/{len(all_tests)}] {test['id']}: {test['question'][:60]}...")
         tool_log = []
 
-        # Capture tool calls by wrapping the agent's dispatch function. The agent calls
-        # the module-level agent._call_tool(name, input) for every tool use, so patching
-        # it here intercepts every call regardless of provider. (Patching agent_tools.*
-        # would NOT work: agent.TOOL_REGISTRY holds direct references to the originals.)
-        import agent as agent_mod
-        _orig_call_tool = agent_mod._call_tool
-
-        def logging_call_tool(name, tool_input, _log=tool_log, _orig=_orig_call_tool):
-            _log.append(name)
-            return _orig(name, tool_input)
-
-        agent_mod._call_tool = logging_call_tool
-
         start = time.time()
         try:
             agent.reset()
             answer = agent.chat(test["question"])
+            tool_log = [e["tool"] for e in agent.trace if e["kind"] == "tool" and e["status"] == "ok"]
             elapsed = time.time() - start
 
             if test["type"] == "A":
@@ -561,6 +554,8 @@ def run_eval(
                 r = evaluate_type_c(test, answer, tool_log)
 
             r.latency_seconds = round(elapsed, 2)
+            r.run_status = agent.last_run.get("status", "unknown")
+            r.tool_errors = sum(e["kind"] == "tool" and e["status"] == "error" for e in agent.trace)
 
         except Exception as e:
             elapsed = time.time() - start
@@ -573,8 +568,6 @@ def run_eval(
                 agent_answer="", error=str(e),
                 tags=test.get("tags", []),
             )
-        finally:
-            agent_mod._call_tool = _orig_call_tool
 
         results.append(r)
         print(f"    → score={r.answer_score:.2f}, tool_correct={r.tool_correct}, latency={r.latency_seconds}s")
@@ -587,6 +580,9 @@ def run_eval(
 # ─────────────────────────────────────────────────────────────────────────────
 
 def print_report(results: list[EvalResult]):
+    if not results:
+        print("No evaluation results.")
+        return
     print("\n" + "=" * 65)
     print("EVALUATION REPORT — Hip Fracture Clinical AI Agent")
     print("=" * 65)
@@ -615,7 +611,7 @@ def print_report(results: list[EvalResult]):
         print(f"\n{label} (n={n})")
         print(f"  Tool selection accuracy : {tool_acc:.0%}")
         print(f"  Answer score (avg)      : {avg_score:.2f} / 1.0")
-        print(f"  Hallucination rate      : {halluc_rate:.1%}")
+        print(f"  Heuristic flag rate      : {halluc_rate:.1%}")
         print(f"  Error rate              : {errors/n:.1%}")
         print(f"  Avg latency             : {avg_latency:.1f}s")
 
@@ -627,7 +623,7 @@ def print_report(results: list[EvalResult]):
     print(f"OVERALL  (n={len(results)})")
     print(f"  Composite score         : {overall_score:.2f} / 1.0")
     print(f"  Tool selection accuracy : {overall_tool:.0%}")
-    print(f"  Hallucination rate      : {overall_halluc:.1%}")
+    print(f"  Heuristic flag rate      : {overall_halluc:.1%}")
     print("=" * 65)
 
     # Failures worth investigating
@@ -664,7 +660,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--n", type=int, default=15, help="Number of questions to evaluate (default 15)")
     parser.add_argument("--provider", default="anthropic", choices=["anthropic", "openai"])
-    parser.add_argument("--full", action="store_true", help="Run full 100-question eval")
+    parser.add_argument("--full", action="store_true", help="Run the complete available question bank")
     args = parser.parse_args()
 
     n = 100 if args.full else args.n

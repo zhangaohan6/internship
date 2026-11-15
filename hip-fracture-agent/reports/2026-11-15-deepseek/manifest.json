@@ -1,0 +1,39 @@
+{
+  "runner_version": "live-suite-v3.0",
+  "config": {
+    "provider": "openai",
+    "model": "deepseek-chat",
+    "max_steps": 10,
+    "max_tool_calls": 20,
+    "timeout": 45,
+    "max_retries": 1,
+    "max_history_turns": 8,
+    "max_output_chars": 16000,
+    "max_tool_retries": 1,
+    "max_evidence_entries": 64
+  },
+  "endpoint_host": "api.deepseek.com",
+  "endpoint_path": "/v1",
+  "split": "holdout",
+  "repeats": 2,
+  "planned_jobs": 300,
+  "case_sha256": "ed2e777b6bf16f9c1a4877fcdb7a69ef278889f782e2c8c55d886113dadb9d88",
+  "source_sha256": "84e661bff0b1c62ecfc121d4cd384752f1586c55d7c03e8a0cdfa22dd4a62eaa",
+  "dataset_sha256": "9417f34c032e87b5b864e8ea4baa08cd726cef1e3081281e36ab35b005e6e17f",
+  "artifact_sha256": {
+    "fwalk2_model.pkl": "3be8e1c73b970e61cff3b8696f525fc0558fb8f938dabe03714d811f0a8da3e9",
+    "rehab_model.pkl": "bc39b99740091cc4dd79c546827685850c09b6b6d4732f8d9ffe453c92370204",
+    "ACSQHC hip-fracture-clinical-care-standard-2016-superseded.pdf": "6760067ce41836a3802e14ca18956216bfd6a7422698b9abd9e3ef402b8247af",
+    "ACSQHC hip-fracture-clinical-care-standard-2023.pdf": "201cd87b3966c3c390306f9868b69c8fa1a74dfac8bac2e52ad3fbcba2622187"
+  },
+  "retrieval": {
+    "mode": "lexical",
+    "disabled": false
+  },
+  "dependencies": {
+    "anthropic": "0.116.0",
+    "openai": "2.44.0",
+    "pydantic": "2.13.4",
+    "pandas": "3.0.3"
+  }
+}

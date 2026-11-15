@@ -41,3 +41,11 @@ __pycache__/
 eval_results*.json
 *.log
 EVAL_RUN_NOTES.txt
+
+# Local original guideline PDFs and runtime traces (not redistributed)
+guidelines/*.pdf
+.env.local
+trace*.json
+
+# Private real-model evaluation audits and frozen run snapshots
+eval_runs/
